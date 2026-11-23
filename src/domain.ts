@@ -8,6 +8,8 @@ export interface Payment { id: string; sessionId: string; consoleId: string; cre
 export interface Expense { id: string; concept: string; category: 'Renta'|'Electricidad'|'Internet'|'Mantenimiento'|'Controles y accesorios'|'Videojuegos'|'Suscripciones'|'Limpieza'|'Otros'; amount: number; date: string; type: 'fixed'|'variable'; notes?: string }
 export interface TariffPlan { id: string; label: string; minutes: number; ps2Price: number; xboxPrice: number }
 export interface Setting { key: string; value: string | number | boolean }
+export interface UserAction { id: string; timestamp: number; action: string; entity: string; entityId?: string; summary: string; details?: string }
+export interface FileHandleRecord { id: string; handle: FileSystemFileHandle }
 export const initialConsoles: GameConsole[] = [
   { id: 'ps2-1', name: 'PlayStation 2', category: 'PlayStation', type: 'PS2', hourlyRate: 10, status: 'available', active: true },
   { id: 'xbox-s-1', name: 'Xbox Series S', category: 'XBOX', type: 'Xbox Series S', hourlyRate: 15, status: 'available', active: true },
