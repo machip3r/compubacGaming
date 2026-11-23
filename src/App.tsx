@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useState } from 'react'
 import { BarChart3, CalendarClock, LayoutDashboard, Moon, Settings2, SlidersHorizontal, Sun } from 'lucide-react'
 import { db } from './db'
 import { consoleCatalog, formatMoney, type Expense, type GameConsole, type GameSession, type Payment, type PaymentMethod } from './domain'
@@ -23,19 +23,53 @@ import { SettingsPage } from './features/settings/SettingsPage'
 import { useGameData } from './hooks/useGameData'
 
 type Modal = SessionModal | null
+type ConsoleDialogState = { mode: 'add' } | { mode: 'edit'; consoleInfo: GameConsole }
 const parseDateTimeInput = (value:string) => { const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value); if (!match) return NaN; const [, year, month, day, hour, minute] = match; const y=Number(year), mo=Number(month), d=Number(day), h=Number(hour), mi=Number(minute); const date = new Date(y, mo-1, d, h, mi); return date.getFullYear()===y && date.getMonth()===mo-1 && date.getDate()===d && date.getHours()===h && date.getMinutes()===mi ? date.getTime() : NaN }
-const nav = [{ label: 'Consolas', icon: LayoutDashboard }, { label: 'Sesiones', icon: CalendarClock }, { label: 'Finanzas', icon: BarChart3 }, { label: 'Calculadora', icon: SlidersHorizontal }]
+const nav = [
+  { label: 'Consolas', path: '/consoles', icon: LayoutDashboard },
+  { label: 'Sesiones', path: '/sessions', icon: CalendarClock },
+  { label: 'Finanzas', path: '/finance', icon: BarChart3 },
+  { label: 'Calculadora', path: '/calculator', icon: SlidersHorizontal },
+]
+const routes = [...nav, { label: 'Configuración', path: '/settings', icon: Settings2 }]
+const defaultPage = 'Consolas'
+const defaultPath = '/consoles'
+const routeRedirects: Record<string, string> = { '/': defaultPath }
+const normalizePath = (pathname: string) => pathname.replace(/\/+$/, '') || '/'
+const resolvePath = (pathname: string) => {
+  const normalized = normalizePath(pathname)
+  const redirected = routeRedirects[normalized]
+  if (redirected) return redirected
+  return routes.find(route => route.path === normalized)?.path ?? defaultPath
+}
+const pageFromPath = (pathname: string) => routes.find(route => route.path === resolvePath(pathname))?.label ?? defaultPage
+const pathFromPage = (page: string) => routes.find(route => route.label === page)?.path ?? defaultPath
 const localDateValue=()=>{const date=new Date(),pad=(n:number)=>String(n).padStart(2,'0');return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`}
 
 export default function App() {
   const { consoles, sessions, payments, tariffs, expenses, now, loaded, loadError, theme, setTheme, refresh, loadApplication, toggleTheme, auditStatus, setAuditStatus } = useGameData()
-  const [modal, setModal] = useState<Modal>(null), [page, setPage] = useState('Consolas')
+  const [modal, setModal] = useState<Modal>(null), [page, setPage] = useState(() => pageFromPath(window.location.pathname))
   const [appDialog, setAppDialog] = useState<AppDialog|null>(null)
-  const [addingConsole,setAddingConsole] = useState(false)
+  const [consoleDialog, setConsoleDialog] = useState<ConsoleDialogState | null>(null)
   const [addingExpense,setAddingExpense] = useState(false)
   const [method, setMethod] = useState<PaymentMethod>('cash')
-  const [editingRate, setEditingRate] = useState<string | null>(null), [rateDraft, setRateDraft] = useState('')
   const [sessionToEdit, setSessionToEdit] = useState<GameSession|null>(null)
+  useLayoutEffect(() => {
+    const applyPath = () => {
+      const nextPath = resolvePath(window.location.pathname)
+      if (window.location.pathname !== nextPath) window.history.replaceState({ page: pageFromPath(nextPath) }, '', nextPath)
+      setPage(pageFromPath(nextPath))
+    }
+    applyPath()
+    window.addEventListener('popstate', applyPath)
+    return () => window.removeEventListener('popstate', applyPath)
+  }, [])
+  const navigate = (nextPage: string) => {
+    const targetPage = routes.some(route => route.label === nextPage) ? nextPage : defaultPage
+    setPage(targetPage)
+    const nextPath = pathFromPage(targetPage)
+    if (window.location.pathname !== nextPath) window.history.pushState({ page: targetPage }, '', nextPath)
+  }
   const showMessageDialog = (title:string, message:string) => new Promise<void>(resolve => setAppDialog({ kind:'message', title, message, resolve }))
   const askConfirmation = (title:string, message:string, confirmLabel='Confirmar', destructive=false) => new Promise<boolean>(resolve => setAppDialog({ kind:'confirm', title, message, confirmLabel, destructive, resolve }))
   const askForText = (title:string, message:string, label:string, placeholder:string, submitLabel:string) => new Promise<string|null>(resolve => setAppDialog({ kind:'text', title, message, label, placeholder, submitLabel, resolve }))
@@ -64,16 +98,55 @@ export default function App() {
     try { await extendSession(s, tariffPrice(c, 30, tariffs), method); await refresh() }
     catch (error) { await showMessageDialog('No se pudo extender', error instanceof SessionConflictError ? error.message : 'Ocurrió un error al extender la sesión. Inténtalo de nuevo.') }
   }
-  const updateRate = async (c: GameConsole) => { const n = Number(rateDraft); if (rateDraft.trim()==='' || !Number.isFinite(n) || n < 0) { await showMessageDialog('Tarifa no válida', 'Escribe un importe igual o mayor que cero.'); return } await db.transaction('rw', db.consoles, db.userActions, async () => { await db.consoles.update(c.id, { hourlyRate: n }); await recordUserAction({ action: 'console.rate.updated', entity: 'console', entityId: c.id, summary: `Actualizó la tarifa de ${c.name}.`, details: JSON.stringify({ hourlyRate: n }) }) }); setEditingRate(null); await refresh() }
-  const addConsole = async (input: { name: string; type: string; rate: string }) => {
-    const rate=Number(input.rate), catalogEntry=consoleCatalog.find(group=>group.models.includes(input.type))
-    if(!catalogEntry){await showMessageDialog('Elige un modelo','Selecciona un tipo de consola del catálogo.');return}
+  const saveConsole = async (input: { name: string; type: string; rate: string }, target?: GameConsole) => {
+    const rate=Number(input.rate), catalogEntry=consoleCatalog.find(group=>group.models.includes(input.type)), keepsCurrentType=Boolean(target&&target.type===input.type)
+    if(!catalogEntry&&!keepsCurrentType){await showMessageDialog('Elige un modelo','Selecciona un tipo de consola del catálogo.');return}
     if(input.rate.trim()===''||!Number.isFinite(rate)||rate<0){await showMessageDialog('Tarifa no válida','Escribe una tarifa igual o mayor que cero.');return}
-    const duplicates=consoles.filter(c=>c.type===input.type).length, name=input.name.trim()||`${input.type}${duplicates?` · ${duplicates+1}`:''}`
-    const consoleRecord:GameConsole={id:crypto.randomUUID(),name,type:input.type,category:catalogEntry.category,hourlyRate:rate,status:'available',active:true}
-    await db.transaction('rw', db.consoles, db.userActions, async () => { await db.consoles.add(consoleRecord); await recordUserAction({ action: 'console.created', entity: 'console', entityId: consoleRecord.id, summary: `Agregó la consola ${consoleRecord.name}.`, details: JSON.stringify({ type: consoleRecord.type, hourlyRate: rate }) }) });setAddingConsole(false);await refresh()
+    const trimmedName=input.name.trim()
+    if(target){
+      const name=trimmedName||target.name, category=catalogEntry?.category??target.category
+      await db.transaction('rw', db.consoles, db.userActions, async () => {
+        await db.consoles.update(target.id, { name, type: input.type, hourlyRate: rate, ...(category?{ category }:{}) })
+        await recordUserAction({ action: 'console.updated', entity: 'console', entityId: target.id, summary: `Actualizó la consola ${name}.`, details: JSON.stringify({ previousName: target.name, name, previousType: target.type, type: input.type, previousRate: target.hourlyRate, hourlyRate: rate }) })
+      })
+      setConsoleDialog(null); await refresh(); return
+    }
+    const duplicates=consoles.filter(c=>c.type===input.type).length, name=trimmedName||`${input.type}${duplicates?` · ${duplicates+1}`:''}`
+    const consoleRecord:GameConsole={id:crypto.randomUUID(),name,type:input.type,category:catalogEntry?.category,hourlyRate:rate,status:'available',active:true}
+    await db.transaction('rw', db.consoles, db.userActions, async () => { await db.consoles.add(consoleRecord); await recordUserAction({ action: 'console.created', entity: 'console', entityId: consoleRecord.id, summary: `Agregó la consola ${consoleRecord.name}.`, details: JSON.stringify({ type: consoleRecord.type, hourlyRate: rate }) }) });setConsoleDialog(null);await refresh()
   }
-  const openAddConsole=()=>setAddingConsole(true)
+  const removeConsole = async (c: GameConsole) => {
+    const activeSession = sessions.some(s => s.status === 'active' && s.consoleId === c.id)
+    if (activeSession) { await showMessageDialog('Consola en uso', `Finaliza o cancela la sesión activa de ${c.name} antes de desactivarla.`); return }
+    if (!await askConfirmation('Desactivar consola', `¿Desactivar ${c.name}? Dejará de aparecer en el panel de consolas y podrás reactivarla desde Configuración. Sus sesiones y pagos se conservan; esta acción se puede revertir.`, 'Desactivar consola', true)) return
+    await db.transaction('rw', db.consoles, db.userActions, async () => {
+      await db.consoles.update(c.id, { active: false, status: 'available' })
+      await recordUserAction({ action: 'console.removed', entity: 'console', entityId: c.id, summary: `Desactivó la consola ${c.name}.`, details: JSON.stringify({ type: c.type, hourlyRate: c.hourlyRate }) })
+    })
+    await refresh()
+  }
+  const restoreConsole = async (c: GameConsole) => {
+    await db.transaction('rw', db.consoles, db.userActions, async () => {
+      await db.consoles.update(c.id, { active: true, status: 'available' })
+      await recordUserAction({ action: 'console.restored', entity: 'console', entityId: c.id, summary: `Reactivó la consola ${c.name}.`, details: JSON.stringify({ type: c.type, hourlyRate: c.hourlyRate }) })
+    })
+    await refresh()
+  }
+  const deleteConsole = async (c: GameConsole) => {
+    if (c.active) return
+    const activeSession = sessions.some(s => s.status === 'active' && s.consoleId === c.id)
+    if (activeSession) { await showMessageDialog('Consola en uso', `Finaliza o cancela la sesión activa de ${c.name} antes de eliminarla.`); return }
+    const [sessionCount, paymentCount] = await Promise.all([db.sessions.where('consoleId').equals(c.id).count(), db.payments.where('consoleId').equals(c.id).count()])
+    const historyParts = [sessionCount && `${sessionCount} ${sessionCount === 1 ? 'sesión' : 'sesiones'}`, paymentCount && `${paymentCount} ${paymentCount === 1 ? 'pago' : 'pagos'}`].filter(Boolean).join(' y ')
+    const historyNote = historyParts ? `Sus ${historyParts} permanecen en el historial y en Finanzas.` : 'No tiene sesiones ni pagos registrados.'
+    if (!await askConfirmation('Eliminar consola definitivamente', `¿Eliminar ${c.name} para siempre? Esta acción no se puede deshacer. ${historyNote}`, 'Eliminar definitivamente', true)) return
+    await db.transaction('rw', db.consoles, db.userActions, async () => {
+      await db.consoles.delete(c.id)
+      await recordUserAction({ action: 'console.deleted', entity: 'console', entityId: c.id, summary: `Eliminó definitivamente la consola ${c.name}.`, details: JSON.stringify({ type: c.type, hourlyRate: c.hourlyRate, sessions: sessionCount, payments: paymentCount }) })
+    })
+    await refresh()
+  }
+  const openAddConsole=()=>setConsoleDialog({ mode: 'add' })
   const addExpense = async (input: Omit<Expense, 'id'>) => {
     const concept=input.concept.trim(),amount=input.amount
     if(!concept){await showMessageDialog('Falta el concepto','Escribe una descripción para el gasto.');return}
@@ -169,27 +242,26 @@ export default function App() {
   return <div className="shell" data-theme={theme}>
     <aside className="sidebar">
       <div className="brand"><img className="brand-wordmark" src="/brand/compubac-hero-mark.png" alt="CompuBac"/><img className="brand-symbol" src="/brand/compubac-favicon.png" alt=""/><div className="brand-caption">GAMING</div></div>
-      <div className="nav-label">OPERACIÓN</div><nav>{nav.map(item => <button key={item.label} className={`nav-item ${page === item.label ? 'selected' : ''}`} onClick={() => setPage(item.label)}><item.icon size={17}/>{item.label}{item.label === 'Consolas' && activeSessions.length > 0 && <span className="nav-count">{activeSessions.length}</span>}</button>)}</nav>
-      <div className="nav-label lower-label">SISTEMA</div><button className={`nav-item ${page === 'Configuración' ? 'selected' : ''}`} onClick={() => setPage('Configuración')}><Settings2 size={17}/>Configuración</button>
+      <div className="nav-label">OPERACIÓN</div><nav>{nav.map(item => <button key={item.label} className={`nav-item ${page === item.label ? 'selected' : ''}`} onClick={() => navigate(item.label)}><item.icon size={17}/>{item.label}{item.label === 'Consolas' && activeSessions.length > 0 && <span className="nav-count">{activeSessions.length}</span>}</button>)}</nav>
+      <div className="nav-label lower-label">SISTEMA</div><button className={`nav-item ${page === 'Configuración' ? 'selected' : ''}`} onClick={() => navigate('Configuración')}><Settings2 size={17}/>Configuración</button>
       <div className="sidebar-bottom"><div className="profile"><div className="profile-avatar">M</div><div><b>MacHip3r</b><small>Administrador</small></div></div></div>
     </aside>
     <main className="main-area"><header className="topbar"><div className="breadcrumb">CompuBac <span>/</span> {page}</div><div className="top-actions"><button className="icon-btn theme-toggle" onClick={toggleTheme} aria-label={theme === 'light' ? 'Activar tema oscuro' : 'Activar tema claro'} title={theme === 'light' ? 'Activar tema oscuro' : 'Activar tema claro'}>{theme === 'light' ? <Moon size={18}/> : <Sun size={18}/>}</button><div className="top-avatar">M</div></div></header>
       <div className="content">
-        <div className="page-heading"><div><div className="eyebrow">{new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).format(now).toUpperCase()}</div><h1>{page === 'Consolas' ? 'Control de consolas' : page === 'Calculadora' ? 'Calculadora de rentabilidad' : page}</h1><p>{page === 'Consolas' ? 'Todo listo para tu siguiente partida.' : 'Resumen y administración de tu negocio.'}</p></div>{page === 'Consolas' && <button className="button secondary" onClick={() => setPage('Configuración')}><Settings2 size={16}/> Gestionar consolas</button>}</div>
+        <div className="page-heading"><div><div className="eyebrow">{new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).format(now).toUpperCase()}</div><h1>{page === 'Consolas' ? 'Control de consolas' : page === 'Calculadora' ? 'Calculadora de rentabilidad' : page}</h1><p>{page === 'Consolas' ? 'Todo listo para tu siguiente partida.' : 'Resumen y administración de tu negocio.'}</p></div>{page === 'Consolas' && <button className="button secondary" onClick={() => navigate('Configuración')}><Settings2 size={16}/> Gestionar consolas</button>}</div>
         {page === 'Consolas' && <DashboardPage
           consoles={consoles} payments={payments} activeSessions={activeSessions} activeByConsole={activeByConsole}
           todayStart={todayStart} todayIncome={todayIncome} todayPayments={todayPayments} completedToday={completedToday}
-          todayHours={todayHours} recent={recent} now={now} onNavigate={setPage}
+          todayHours={todayHours} recent={recent} now={now} onNavigate={navigate}
           onStart={consoleInfo => setModal({ kind: 'start', console: consoleInfo })}
           onFinish={(session, consoleInfo) => setModal({ kind: 'finish', session, console: consoleInfo })}
           onExtend={extend} onCancel={cancelSession}
         />}
         {page === 'Sesiones' && <SessionsPage sessions={sessions} consoles={consoles} onFinish={(session, consoleInfo) => setModal({ kind: 'finish', session, console: consoleInfo })} onEdit={openSessionEditor} onDelete={deleteSession} />}
         {page === 'Finanzas' && <FinancePage payments={payments} sessions={sessions} expenses={expenses} onMarkPaid={markPaymentPaid} onAddExpense={() => setAddingExpense(true)} />}
-        {page === 'Configuración' && <SettingsPage consoles={consoles} tariffs={tariffs} editingRate={editingRate} rateDraft={rateDraft}
-          onAddConsole={openAddConsole} onRateDraftChange={setRateDraft} onSaveRate={updateRate}
-          onEditRate={consoleInfo => { setEditingRate(consoleInfo.id); setRateDraft(String(consoleInfo.hourlyRate)) }}
-          onCancelRateEdit={() => setEditingRate(null)} onExportCsv={exportActionsCsv} onExportBackup={exportBackup} onImportBackup={importBackup}
+        {page === 'Configuración' && <SettingsPage consoles={consoles} tariffs={tariffs}
+          onAddConsole={openAddConsole} onEditConsole={consoleInfo => setConsoleDialog({ mode: 'edit', consoleInfo })}
+          onRemoveConsole={removeConsole} onRestoreConsole={restoreConsole} onDeleteConsole={deleteConsole} onExportCsv={exportActionsCsv} onExportBackup={exportBackup} onImportBackup={importBackup}
           auditStatus={auditStatus} onConnectAuditCsv={connectAuditFile} onRequestAuditPermission={requestAuditPermission} onDownloadAuditCsv={downloadActionsCsv}
         />}
         {page === 'Calculadora' && <Calculator consoles={consoles} sessions={sessions} payments={payments} expenses={expenses} onApply={applyHourlyPrice} />}
@@ -202,8 +274,10 @@ export default function App() {
     {sessionToEdit && <SessionEditorDialog session={sessionToEdit} consoles={consoles}
       onClose={() => setSessionToEdit(null)} onSave={saveSessionEdit}
     />}
-    {addingConsole && <ConsoleDialog
-      onClose={() => setAddingConsole(false)} onSubmit={addConsole}
+    {consoleDialog && <ConsoleDialog
+      {...(consoleDialog.mode === 'edit' ? { consoleInfo: consoleDialog.consoleInfo } : {})}
+      onClose={() => setConsoleDialog(null)}
+      onSubmit={input => void saveConsole(input, consoleDialog.mode === 'edit' ? consoleDialog.consoleInfo : undefined)}
     />}
     {addingExpense && <ExpenseDialog
       onClose={() => setAddingExpense(false)} onSubmit={addExpense}
