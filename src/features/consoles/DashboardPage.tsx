@@ -1,4 +1,5 @@
-import { Activity, CalendarClock, Check, Clock3, Gamepad2, Plus, TrendingUp, Wallet, X } from 'lucide-react'
+import { useState } from 'react'
+import { Activity, ArrowRightLeft, CalendarClock, Check, Clock3, Gamepad2, Plus, TrendingUp, Wallet, X } from 'lucide-react'
 import { elapsed, formatMoney, formatTime, openSessionAmount, type GameConsole, type GameSession, type Payment } from '../../domain'
 import { Stat } from '../../shared/Stat'
 
@@ -18,11 +19,24 @@ interface DashboardPageProps {
   onFinish: (session: GameSession, consoleInfo: GameConsole) => void
   onExtend: (session: GameSession, consoleInfo: GameConsole) => void
   onCancel: (session: GameSession, consoleInfo: GameConsole) => void
+  onReorder: (fromId: string, toId: string) => void
+  onTransfer: (session: GameSession) => void
   onNavigate: (page: string) => void
 }
 
 export function DashboardPage(props: DashboardPageProps) {
-  const { consoles, payments, activeSessions, activeByConsole, todayStart, todayIncome, todayPayments, completedToday, todayHours, recent, now, onStart, onFinish, onExtend, onCancel, onNavigate } = props
+  const { consoles, payments, activeSessions, activeByConsole, todayStart, todayIncome, todayPayments, completedToday, todayHours, recent, now, onStart, onFinish, onExtend, onCancel, onReorder, onTransfer, onNavigate } = props
+  const [draggingId, setDraggingId] = useState('')
+  const [dropTargetId, setDropTargetId] = useState('')
+  const [orderAnnouncement, setOrderAnnouncement] = useState('')
+  const orderedConsoles = consoles.filter(consoleInfo => consoleInfo.active).sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0))
+  const moveByKeyboard = (id: string, delta: number) => {
+    const index = orderedConsoles.findIndex(consoleInfo => consoleInfo.id === id)
+    const target = orderedConsoles[index + delta]
+    if (!target) return
+    onReorder(id, target.id)
+    setOrderAnnouncement(`${orderedConsoles[index].name} cambió de posición.`)
+  }
 
   return <>
     <section className="stats-grid">
@@ -31,17 +45,26 @@ export function DashboardPage(props: DashboardPageProps) {
       <Stat icon={<Clock3/>} label="Horas de juego" value={`${todayHours.toFixed(1)} h`} note="Tiempo acumulado hoy" accent="violet"/>
       <Stat icon={<TrendingUp/>} label="Sesiones completadas" value={String(completedToday.length).padStart(2, '0')} note="Desde las 00:00 h" accent="amber"/>
     </section>
-    <section className="section-head"><div><h2>Estaciones</h2><p>Estado en tiempo real · Actualizado automáticamente</p></div></section>
-    <section className="console-grid">
-      {consoles.filter(c => c.active).map(consoleInfo => {
+    <section className="section-head"><div><h2>Estaciones</h2><p>Arrastra las estaciones para cambiar su orden · Estado en tiempo real</p></div></section>
+    <section className="console-grid" aria-label="Estaciones. Arrastra una estación para cambiar el orden o selecciónala y usa las flechas arriba y abajo.">
+      <span className="sr-only" aria-live="polite">{orderAnnouncement}</span>
+      {orderedConsoles.map((consoleInfo, consoleIndex) => {
         const session = activeByConsole.get(consoleInfo.id)
-        const seconds = session ? elapsed(session.startedAt, now) : 0
-        const remaining = session?.durationMinutes ? Math.max(0, session.durationMinutes * 60 - seconds) : null
+        const timerStartedAt = session ? session.transferStartedAt ?? session.startedAt : now
+        const seconds = session ? elapsed(timerStartedAt, now) : 0
+        const remaining = session?.mode === 'prepaid' && session.durationMinutes !== undefined ? Math.max(0, session.durationMinutes * 60 - seconds) : null
         const expired = remaining !== null && remaining === 0
         const warning = remaining !== null && remaining > 0 && remaining <= 300
         const charge = session ? (session.mode === 'prepaid' ? session.amount : openSessionAmount(session.rate, session.startedAt, now, 'minute')) : 0
+        const canTransfer = Boolean(session && session.mode === 'prepaid' && remaining !== null && remaining > 0 && (consoleInfo.category === 'XBOX' || /xbox/i.test(consoleInfo.type)))
 
-        return <article className={`console-card ${session ? 'is-occupied' : ''} ${warning ? 'is-warning' : ''} ${expired ? 'is-expired' : ''}`} key={consoleInfo.id}>
+        return <article className={`console-card ${session ? 'is-occupied' : ''} ${warning ? 'is-warning' : ''} ${expired ? 'is-expired' : ''} ${draggingId===consoleInfo.id?'is-dragging':''} ${dropTargetId===consoleInfo.id?'is-drop-target':''}`} key={consoleInfo.id} draggable
+          role="group" tabIndex={0} aria-label={`${consoleInfo.name}, estación ${consoleIndex+1} de ${orderedConsoles.length}. Usa las flechas arriba y abajo para cambiar el orden.`}
+          onKeyDown={event=>{if(event.target!==event.currentTarget)return;if(event.key==='ArrowUp'||event.key==='ArrowDown'){event.preventDefault();moveByKeyboard(consoleInfo.id,event.key==='ArrowUp'?-1:1)}}}
+          onDragStart={event=>{setDraggingId(consoleInfo.id);event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',consoleInfo.id)}}
+          onDragOver={event=>{event.preventDefault();event.dataTransfer.dropEffect='move';setDropTargetId(consoleInfo.id)}}
+          onDrop={event=>{event.preventDefault();const fromId=event.dataTransfer.getData('text/plain')||draggingId;if(fromId&&fromId!==consoleInfo.id)onReorder(fromId,consoleInfo.id);setDraggingId('');setDropTargetId('')}}
+          onDragEnd={()=>{setDraggingId('');setDropTargetId('')}}>
           <div className="card-top">
             <div className={`console-icon ${session ? 'on' : ''}`}><Gamepad2 size={20}/></div>
             <span className={`status ${session ? expired ? 'red' : warning ? 'amber' : 'blue' : 'green'}`}><i/>{session ? expired ? 'Tiempo agotado' : warning ? 'Por terminar' : 'En uso' : 'Disponible'}</span>
@@ -49,8 +72,8 @@ export function DashboardPage(props: DashboardPageProps) {
           <div className="console-title"><h3>{consoleInfo.name}</h3><span>{consoleInfo.type} <b>·</b> {formatMoney(consoleInfo.hourlyRate)}/hora</span></div>
           {session ? <>
             <div className="timer-box"><div><span className="timer-label">{session.mode === 'prepaid' ? 'TIEMPO RESTANTE' : 'TIEMPO TRANSCURRIDO'}</span><strong className={expired ? 'timer-red' : ''}>{formatTime(session.mode === 'prepaid' ? remaining! : seconds)}</strong></div><div className="timer-side"><span>INICIO</span><b>{new Date(session.startedAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</b></div></div>
-            <div className="card-summary"><div><span>Importe</span><b>{formatMoney(charge)}</b></div><div><span>{session.mode === 'prepaid' ? 'Termina' : 'Modalidad'}</span><b>{session.mode === 'prepaid' ? new Date(session.startedAt + (session.durationMinutes ?? 0) * 60000).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : 'Tiempo libre'}</b></div></div>
-            <div className="card-actions"><button className="button outline" onClick={() => onExtend(session, consoleInfo)}><Plus size={15}/> +30 min</button><button className="button cancel-session icon-cancel" title="Cancelar sesión" aria-label="Cancelar sesión" onClick={() => onCancel(session, consoleInfo)}><X size={15}/></button><button className="button finish" onClick={() => onFinish(session, consoleInfo)}><Check size={15}/> Finalizar</button></div>
+            <div className="card-summary"><div><span>Importe</span><b>{formatMoney(charge)}</b></div><div><span>{session.mode === 'prepaid' ? 'Termina' : 'Modalidad'}</span><b>{session.mode === 'prepaid' ? new Date(timerStartedAt + (session.durationMinutes ?? 0) * 60000).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : 'Tiempo libre'}</b></div></div>
+            <div className={`card-actions${canTransfer?' has-transfer':''}`}><button className="button outline" onClick={() => onExtend(session, consoleInfo)}><Plus size={15}/> +30 min</button>{canTransfer&&<button className="button transfer-session-button" title="Transferir tiempo a otra Xbox" aria-label="Transferir tiempo a otra Xbox" onClick={()=>onTransfer(session)}><ArrowRightLeft size={15}/><span>Mover</span></button>}<button className="button cancel-session icon-cancel" title="Cancelar sesión" aria-label="Cancelar sesión" onClick={() => onCancel(session, consoleInfo)}><X size={15}/></button><button className="button finish" onClick={() => onFinish(session, consoleInfo)}><Check size={15}/> Finalizar</button></div>
           </> : <>
             <div className="available-body"><div className="available-orb"><Activity size={22}/></div><p>Lista para recibir<br/>una nueva sesión</p></div>
             <button disabled={consoleInfo.status === 'service'} className="button start-button" onClick={() => onStart(consoleInfo)}><Plus size={16}/> Iniciar sesión</button>

@@ -1,8 +1,8 @@
 export type ConsoleStatus = 'available' | 'occupied' | 'service'
 export type SessionStatus = 'active' | 'completed' | 'cancelled'
 export type PaymentMethod = 'cash' | 'transfer'
-export interface GameConsole { id: string; name: string; type: string; category?: 'PlayStation'|'XBOX'|'Nintendo'; hourlyRate: number; status: ConsoleStatus; active: boolean }
-export interface GameSession { id: string; consoleId: string; startedAt: number; endedAt?: number; durationMinutes?: number; rate: number; mode: 'prepaid' | 'open'; amount: number; status: SessionStatus; paidAmount: number; paymentMethod?: PaymentMethod; cancelReason?: string }
+export interface GameConsole { id: string; name: string; type: string; category?: 'PlayStation'|'XBOX'|'Nintendo'; hourlyRate: number; status: ConsoleStatus; active: boolean; sortOrder?: number }
+export interface GameSession { id: string; consoleId: string; startedAt: number; endedAt?: number; durationMinutes?: number; initialDurationMinutes?: number; rate: number; mode: 'prepaid' | 'open'; amount: number; status: SessionStatus; paidAmount: number; paymentMethod?: PaymentMethod; cancelReason?: string; transferStartedAt?: number }
 export interface SessionExtension { id: string; sessionId: string; minutes: number; amount: number; createdAt: number }
 export interface Payment { id: string; sessionId: string; consoleId: string; createdAt: number; paidAt?: number; concept: string; amount: number; method: PaymentMethod; status: 'paid' | 'pending' | 'void' }
 export interface Expense { id: string; concept: string; category: 'Renta'|'Electricidad'|'Internet'|'Mantenimiento'|'Controles y accesorios'|'Videojuegos'|'Suscripciones'|'Limpieza'|'Otros'; amount: number; date: string; type: 'fixed'|'variable'; notes?: string }
@@ -11,10 +11,10 @@ export interface Setting { key: string; value: string | number | boolean }
 export interface UserAction { id: string; timestamp: number; action: string; entity: string; entityId?: string; summary: string; details?: string }
 export interface FileHandleRecord { id: string; handle: FileSystemFileHandle }
 export const initialConsoles: GameConsole[] = [
-  { id: 'ps2-1', name: 'PlayStation 2', category: 'PlayStation', type: 'PS2', hourlyRate: 10, status: 'available', active: true },
-  { id: 'xbox-s-1', name: 'Xbox Series S', category: 'XBOX', type: 'Xbox Series S', hourlyRate: 15, status: 'available', active: true },
-  { id: 'xbox-s-2', name: 'Xbox Series S', category: 'XBOX', type: 'Xbox Series S', hourlyRate: 15, status: 'available', active: true },
-  { id: 'xbox-x-1', name: 'Xbox Series X', category: 'XBOX', type: 'Xbox Series X', hourlyRate: 15, status: 'available', active: true },
+  { id: 'ps2-1', name: 'PlayStation 2', category: 'PlayStation', type: 'PS2', hourlyRate: 10, status: 'available', active: true, sortOrder: 0 },
+  { id: 'xbox-s-1', name: 'Xbox Series S', category: 'XBOX', type: 'Xbox Series S', hourlyRate: 15, status: 'available', active: true, sortOrder: 1 },
+  { id: 'xbox-s-2', name: 'Xbox Series S', category: 'XBOX', type: 'Xbox Series S', hourlyRate: 15, status: 'available', active: true, sortOrder: 2 },
+  { id: 'xbox-x-1', name: 'Xbox Series X', category: 'XBOX', type: 'Xbox Series X', hourlyRate: 15, status: 'available', active: true, sortOrder: 3 },
 ]
 export const consoleCatalog = [
   { category: 'PlayStation' as const, models: ['PS1','PS2','PS3','PS4','PS5'] },

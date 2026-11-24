@@ -6,7 +6,7 @@ interface SessionEditorDialogProps {
   session: GameSession
   consoles: { id: string; name: string; type: string; active: boolean }[]
   onClose: () => void
-  onSave: (input: { consoleId: string; startedAt: string; endedAt: string; rate: string; amount: string }) => void
+  onSave: (input: { consoleId: string; startedAt: string; endedAt: string; rate: string; amount: string; paidAmount: string }) => void
 }
 
 export function SessionEditorDialog(props: SessionEditorDialogProps) {
@@ -16,6 +16,7 @@ export function SessionEditorDialog(props: SessionEditorDialogProps) {
   const [endedAt, setEndedAt] = useState(toDateTimeInput(session.endedAt ?? session.startedAt))
   const [rate, setRate] = useState(String(session.rate))
   const [amount, setAmount] = useState(String(session.amount))
+  const [paidAmount, setPaidAmount] = useState(String(session.paidAmount))
   return <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
     <section className="modal edit-session-modal" role="dialog" aria-modal="true" aria-labelledby="edit-session-title">
       <div className="modal-top"><div><span className="eyebrow">HISTORIAL</span><h2 id="edit-session-title">Editar sesión</h2></div><button className="icon-btn" onClick={onClose} aria-label="Cerrar"><X size={18}/></button></div>
@@ -23,8 +24,8 @@ export function SessionEditorDialog(props: SessionEditorDialogProps) {
       <label className="field-label" htmlFor="edit-console">Consola</label><select id="edit-console" className="edit-input" value={consoleId} onChange={event => setConsoleId(event.target.value)}>{consoles.filter(consoleInfo => consoleInfo.active || consoleInfo.id === session.consoleId).map(consoleInfo => <option key={consoleInfo.id} value={consoleInfo.id}>{consoleInfo.name} · {consoleInfo.type}{consoleInfo.active ? '' : ' · Inactiva'}</option>)}</select>
       <label className="field-label" htmlFor="edit-start">Hora de inicio</label><input id="edit-start" className="edit-input" type="datetime-local" value={startedAt} onChange={event => setStartedAt(event.target.value)}/>
       <label className="field-label" htmlFor="edit-end">Hora de finalización</label><input id="edit-end" className="edit-input" type="datetime-local" value={endedAt} onChange={event => setEndedAt(event.target.value)}/>
-      <div className="edit-numbers"><div><label className="field-label" htmlFor="edit-rate">Tarifa por hora</label><input id="edit-rate" className="edit-input" type="number" min="0" step="0.01" value={rate} onChange={event => setRate(event.target.value)}/></div><div><label className="field-label" htmlFor="edit-amount">Importe total</label><input id="edit-amount" className="edit-input" type="number" min="0" step="0.01" value={amount} onChange={event => setAmount(event.target.value)}/></div></div>
-      <div className="edit-actions"><button className="button secondary" onClick={onClose}>Volver</button><button className="button backup-primary" onClick={() => onSave({ consoleId, startedAt, endedAt, rate, amount })}><Check size={16}/> Guardar cambios</button></div>
+      <div className="edit-numbers"><div><label className="field-label" htmlFor="edit-rate">Tarifa por hora</label><input id="edit-rate" className="edit-input" type="number" min="0" step="0.01" value={rate} onChange={event => setRate(event.target.value)}/></div><div><label className="field-label" htmlFor="edit-amount">Importe total</label><input id="edit-amount" className="edit-input" type="number" min="0" step="0.01" value={amount} onChange={event => setAmount(event.target.value)}/></div><div><label className="field-label" htmlFor="edit-paid-amount">Cobrado</label><input id="edit-paid-amount" className="edit-input" type="number" min="0" step="0.01" value={paidAmount} onChange={event => setPaidAmount(event.target.value)}/></div></div>
+      <div className="edit-actions"><button className="button secondary" onClick={onClose}>Volver</button><button className="button backup-primary" onClick={() => onSave({ consoleId, startedAt, endedAt, rate, amount, paidAmount })}><Check size={16}/> Guardar cambios</button></div>
     </section>
   </div>
 }

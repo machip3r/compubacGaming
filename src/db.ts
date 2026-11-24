@@ -9,6 +9,11 @@ class GameHubDB extends Dexie {
     super('gamehub-local')
     this.version(1).stores({ consoles: 'id, type, status, active', sessions: 'id, consoleId, startedAt, status', sessionExtensions: 'id, sessionId, createdAt', tariffPlans: 'id, minutes', payments: 'id, sessionId, consoleId, createdAt, status', expenses: 'id, category, date', settings: 'key' })
     this.version(2).stores({ consoles: 'id, type, status, active', sessions: 'id, consoleId, startedAt, status', sessionExtensions: 'id, sessionId, createdAt', tariffPlans: 'id, minutes', payments: 'id, sessionId, consoleId, createdAt, status', expenses: 'id, category, date', settings: 'key', userActions: 'id, timestamp, action, entity, entityId', fileHandles: 'id' })
+    this.version(3).stores({ consoles: 'id, type, status, active', sessions: 'id, consoleId, startedAt, status', sessionExtensions: 'id, sessionId, createdAt', tariffPlans: 'id, minutes', payments: 'id, sessionId, consoleId, createdAt, status', expenses: 'id, category, date', settings: 'key', userActions: 'id, timestamp, action, entity, entityId', fileHandles: 'id' }).upgrade(async transaction => {
+      const table = transaction.table('consoles')
+      const rows = await table.toArray() as GameConsole[]
+      await Promise.all(rows.map((consoleInfo, sortOrder) => table.update(consoleInfo.id, { sortOrder })))
+    })
   }
 }
 export const db = new GameHubDB()

@@ -1,4 +1,4 @@
-import type { Expense, GameConsole, GameSession, Payment, SessionExtension, Setting, TariffPlan } from '../domain'
+import type { Expense, GameConsole, GameSession, Payment, SessionExtension, Setting, TariffPlan, UserAction } from '../domain'
 import { db } from '../db'
 
 export interface BackupData {
@@ -9,6 +9,7 @@ export interface BackupData {
   payments: Payment[]
   expenses: Expense[]
   settings: Setting[]
+  userActions?: UserAction[]
 }
 
 export interface AppBackup {
@@ -39,24 +40,26 @@ export function parseBackup(value: unknown): AppBackup {
   const payments = rows(data, 'payments') as unknown as Payment[]
   const expenses = rows(data, 'expenses') as unknown as Expense[]
   const settings = rows(data, 'settings') as unknown as Setting[]
+  const userActions = data.userActions === undefined ? undefined : rows(data, 'userActions') as unknown as UserAction[]
 
   const uniqueIds = (items: Array<{ id: string }>, label: string) => {
     const ids = items.map(item => item.id)
     if (ids.some(id => typeof id !== 'string' || !id) || new Set(ids).size !== ids.length) throw new Error(`La sección «${label}» contiene identificadores vacíos o repetidos.`)
   }
-  for (const [name, items] of Object.entries({ consoles, sessions, extensions, tariffs, payments, expenses })) uniqueIds(items as Array<{ id: string }>, name)
+  for (const [name, items] of Object.entries({ consoles, sessions, extensions, tariffs, payments, expenses, ...(userActions ? { userActions } : {}) })) uniqueIds(items as Array<{ id: string }>, name)
   if (settings.some(setting => !hasString(setting as unknown as Record<string, unknown>, 'key') || !setting.key || !['string', 'number', 'boolean'].includes(typeof setting.value) || (typeof setting.value === 'number' && !Number.isFinite(setting.value))) || new Set(settings.map(setting => setting.key)).size !== settings.length) throw new Error('La sección «settings» contiene claves o valores no válidos.')
 
-  if (consoles.some(item => !hasString(item as unknown as Record<string, unknown>, 'name') || !item.name.trim() || !hasString(item as unknown as Record<string, unknown>, 'type') || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'hourlyRate') || item.hourlyRate < 0 || typeof item.active !== 'boolean' || !['available', 'occupied', 'service'].includes(item.status))) throw new Error('Hay una consola con nombre, tipo, tarifa o estado no válido.')
+  if (consoles.some(item => !hasString(item as unknown as Record<string, unknown>, 'name') || !item.name.trim() || !hasString(item as unknown as Record<string, unknown>, 'type') || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'hourlyRate') || item.hourlyRate < 0 || (item.sortOrder !== undefined && (!hasFiniteNumber(item as unknown as Record<string, unknown>, 'sortOrder') || item.sortOrder < 0)) || typeof item.active !== 'boolean' || !['available', 'occupied', 'service'].includes(item.status))) throw new Error('Hay una consola con nombre, tipo, tarifa u orden no válido.')
   const consoleIds = new Set(consoles.map(item => item.id))
   const sessionIds = new Set(sessions.map(item => item.id))
-  if (sessions.some(item => !consoleIds.has(item.consoleId) || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'startedAt') || (item.endedAt !== undefined && !hasFiniteNumber(item as unknown as Record<string, unknown>, 'endedAt')) || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'rate') || item.rate < 0 || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'amount') || item.amount < 0 || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'paidAmount') || item.paidAmount < 0 || !['active', 'completed', 'cancelled'].includes(item.status) || !['prepaid', 'open'].includes(item.mode))) throw new Error('Hay una sesión con datos no válidos o sin consola asociada.')
+  if (sessions.some(item => !consoleIds.has(item.consoleId) || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'startedAt') || (item.endedAt !== undefined && !hasFiniteNumber(item as unknown as Record<string, unknown>, 'endedAt')) || (item.durationMinutes !== undefined && (!hasFiniteNumber(item as unknown as Record<string, unknown>, 'durationMinutes') || item.durationMinutes <= 0)) || (item.initialDurationMinutes !== undefined && (!hasFiniteNumber(item as unknown as Record<string, unknown>, 'initialDurationMinutes') || item.initialDurationMinutes <= 0)) || (item.transferStartedAt !== undefined && !hasFiniteNumber(item as unknown as Record<string, unknown>, 'transferStartedAt')) || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'rate') || item.rate < 0 || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'amount') || item.amount < 0 || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'paidAmount') || item.paidAmount < 0 || !['active', 'completed', 'cancelled'].includes(item.status) || !['prepaid', 'open'].includes(item.mode))) throw new Error('Hay una sesión con datos no válidos o sin consola asociada.')
   if (payments.some(item => !sessionIds.has(item.sessionId) || !consoleIds.has(item.consoleId) || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'amount') || item.amount < 0 || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'createdAt') || (item.paidAt !== undefined && !hasFiniteNumber(item as unknown as Record<string, unknown>, 'paidAt')) || !hasString(item as unknown as Record<string, unknown>, 'concept') || !['paid', 'pending', 'void'].includes(item.status) || !['cash', 'transfer'].includes(item.method))) throw new Error('Hay un pago con datos no válidos o sin sesión o consola asociada.')
   if (extensions.some(item => !sessionIds.has(item.sessionId) || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'minutes') || item.minutes <= 0 || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'amount') || item.amount < 0 || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'createdAt'))) throw new Error('Hay una extensión no válida o sin sesión asociada.')
   if (tariffs.some(item => !hasString(item as unknown as Record<string, unknown>, 'label') || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'minutes') || item.minutes <= 0 || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'ps2Price') || item.ps2Price < 0 || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'xboxPrice') || item.xboxPrice < 0)) throw new Error('Hay un paquete de tarifa con datos no válidos.')
   if (expenses.some(item => !hasString(item as unknown as Record<string, unknown>, 'concept') || !item.concept.trim() || !hasString(item as unknown as Record<string, unknown>, 'date') || !/^\d{4}-\d{2}-\d{2}$/.test(item.date) || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'amount') || item.amount <= 0 || !['fixed', 'variable'].includes(item.type))) throw new Error('Hay un gasto con concepto, fecha o importe no válido.')
 
-  return { app: 'compubac-gaming', schemaVersion: 1, ...(typeof value.exportedAt === 'string' ? { exportedAt: value.exportedAt } : {}), data: { consoles, sessions, sessionExtensions: extensions, tariffPlans: tariffs, payments, expenses, settings } }
+  if (userActions?.some(action => !hasString(action as unknown as Record<string, unknown>, 'action') || !hasString(action as unknown as Record<string, unknown>, 'entity') || !hasString(action as unknown as Record<string, unknown>, 'summary') || !hasFiniteNumber(action as unknown as Record<string, unknown>, 'timestamp'))) throw new Error('La sección «userActions» contiene acciones no válidas.')
+  return { app: 'compubac-gaming', schemaVersion: 1, ...(typeof value.exportedAt === 'string' ? { exportedAt: value.exportedAt } : {}), data: { consoles, sessions, sessionExtensions: extensions, tariffPlans: tariffs, payments, expenses, settings, ...(userActions ? { userActions } : {}) } }
 }
 
 export async function createBackup() {
@@ -68,6 +71,7 @@ export async function createBackup() {
     payments: await db.payments.toArray(),
     expenses: await db.expenses.toArray(),
     settings: await db.settings.toArray(),
+    userActions: await db.userActions.toArray(),
   }
   return { app: 'compubac-gaming' as const, schemaVersion: 1 as const, exportedAt: new Date().toISOString(), data }
 }
@@ -81,5 +85,6 @@ export async function restoreBackup(backup: AppBackup) {
     await db.payments.clear(); if (backup.data.payments.length) await db.payments.bulkAdd(backup.data.payments)
     await db.expenses.clear(); if (backup.data.expenses.length) await db.expenses.bulkAdd(backup.data.expenses)
     await db.settings.clear(); if (backup.data.settings.length) await db.settings.bulkAdd(backup.data.settings)
+    if (backup.data.userActions) { await db.userActions.clear(); if (backup.data.userActions.length) await db.userActions.bulkAdd(backup.data.userActions) }
   })
 }

@@ -1,0 +1,894 @@
+{
+  "app": "compubac-gaming",
+  "schemaVersion": 1,
+  "exportedAt": "2026-11-24T00:57:46.702Z",
+  "data": {
+    "consoles": [
+      {
+        "id": "ps2-1",
+        "name": "PlayStation 2",
+        "type": "PS2",
+        "hourlyRate": 10,
+        "status": "available",
+        "active": true,
+        "sortOrder": 1
+      },
+      {
+        "id": "xbox-s-1",
+        "name": "Xbox Series S",
+        "type": "Xbox",
+        "hourlyRate": 15,
+        "status": "available",
+        "active": true,
+        "sortOrder": 0
+      },
+      {
+        "id": "xbox-s-2",
+        "name": "Xbox Series S",
+        "type": "Xbox",
+        "hourlyRate": 15,
+        "status": "available",
+        "active": true,
+        "sortOrder": 2
+      },
+      {
+        "id": "xbox-x-1",
+        "name": "Xbox Series X",
+        "type": "Xbox",
+        "hourlyRate": 15,
+        "status": "available",
+        "active": true,
+        "sortOrder": 3
+      }
+    ],
+    "sessions": [
+      {
+        "id": "00a4f88f-f2fb-4eb0-abbb-8541d73ef48b",
+        "consoleId": "xbox-s-2",
+        "startedAt": 1795395600000,
+        "durationMinutes": 60,
+        "rate": 15,
+        "mode": "prepaid",
+        "amount": 15,
+        "status": "completed",
+        "paidAmount": 15,
+        "paymentMethod": "cash",
+        "endedAt": 1795399200000
+      },
+      {
+        "id": "0a58ce82-5f6e-4714-b0a8-fc5d8f0ecf92",
+        "consoleId": "xbox-s-1",
+        "startedAt": 1795395600000,
+        "durationMinutes": 60,
+        "rate": 15,
+        "mode": "prepaid",
+        "amount": 15,
+        "status": "completed",
+        "paidAmount": 15,
+        "paymentMethod": "cash",
+        "endedAt": 1795399200000
+      },
+      {
+        "id": "1cbc4cc7-d80e-4ca5-b225-c1d28f2627aa",
+        "consoleId": "xbox-s-2",
+        "startedAt": 1795475640000,
+        "durationMinutes": 90,
+        "rate": 15,
+        "mode": "prepaid",
+        "amount": 20,
+        "status": "completed",
+        "paidAmount": 20,
+        "paymentMethod": "cash",
+        "endedAt": 1795480440000
+      },
+      {
+        "id": "1d6c8838-dea4-43d9-90bd-f6144555a0a6",
+        "consoleId": "xbox-s-1",
+        "startedAt": 1795402800000,
+        "durationMinutes": 60,
+        "rate": 15,
+        "mode": "prepaid",
+        "amount": 15,
+        "status": "completed",
+        "paidAmount": 15,
+        "paymentMethod": "cash",
+        "endedAt": 1795406400000
+      },
+      {
+        "id": "35c26ec6-d1e4-4262-a123-a40bd974d276",
+        "consoleId": "xbox-x-1",
+        "startedAt": 1795475564198,
+        "durationMinutes": 60,
+        "rate": 15,
+        "mode": "prepaid",
+        "amount": 15,
+        "status": "completed",
+        "paidAmount": 15,
+        "paymentMethod": "cash",
+        "endedAt": 1795479166246
+      },
+      {
+        "id": "367d3bd8-8b34-48ac-a4e5-d6009bd20aef",
+        "consoleId": "xbox-x-1",
+        "startedAt": 1795470597999,
+        "durationMinutes": 60,
+        "rate": 15,
+        "mode": "prepaid",
+        "amount": 15,
+        "status": "completed",
+        "paidAmount": 15,
+        "paymentMethod": "cash",
+        "endedAt": 1795474752902
+      },
+      {
+        "id": "5a28a27c-6f8a-4d47-b09d-7765d2db0854",
+        "consoleId": "xbox-s-1",
+        "startedAt": 1795475640000,
+        "durationMinutes": 90,
+        "rate": 15,
+        "mode": "prepaid",
+        "amount": 20,
+        "status": "completed",
+        "paidAmount": 20,
+        "paymentMethod": "cash",
+        "endedAt": 1795480440000
+      },
+      {
+        "id": "6802d0f7-b74c-4f3b-81bf-3277903b4295",
+        "consoleId": "ps2-1",
+        "startedAt": 1795395600000,
+        "durationMinutes": 60,
+        "rate": 15,
+        "mode": "prepaid",
+        "amount": 15,
+        "status": "completed",
+        "paidAmount": 15,
+        "paymentMethod": "cash",
+        "endedAt": 1795399200000
+      },
+      {
+        "id": "6ce877fc-3e4c-4b1e-b14c-4a27a25ad615",
+        "consoleId": "xbox-s-1",
+        "startedAt": 1795395600000,
+        "durationMinutes": 60,
+        "rate": 15,
+        "mode": "prepaid",
+        "amount": 15,
+        "status": "completed",
+        "paidAmount": 15,
+        "paymentMethod": "cash",
+        "endedAt": 1795399200000
+      },
+      {
+        "id": "6d0ae1fa-7597-4e32-89b2-5a1b33b781f3",
+        "consoleId": "xbox-s-1",
+        "startedAt": 1795466309617,
+        "durationMinutes": 60,
+        "rate": 15,
+        "mode": "prepaid",
+        "amount": 15,
+        "status": "completed",
+        "paidAmount": 15,
+        "paymentMethod": "cash",
+        "endedAt": 1795470595148
+      },
+      {
+        "id": "77b46972-70d3-4732-9ef1-d25d344fe941",
+        "consoleId": "xbox-s-1",
+        "startedAt": 1795402800000,
+        "durationMinutes": 60,
+        "rate": 15,
+        "mode": "prepaid",
+        "amount": 15,
+        "status": "completed",
+        "paidAmount": 15,
+        "paymentMethod": "cash",
+        "endedAt": 1795406400000
+      },
+      {
+        "id": "90e2877a-c265-4c90-a336-a1a5f44193f1",
+        "consoleId": "xbox-s-2",
+        "startedAt": 1795464060000,
+        "durationMinutes": 120,
+        "rate": 15,
+        "mode": "prepaid",
+        "amount": 25,
+        "status": "completed",
+        "paidAmount": 25,
+        "paymentMethod": "cash",
+        "endedAt": 1795470540000
+      },
+      {
+        "id": "aba59c84-e24e-4db3-853a-e3e58c8725b1",
+        "consoleId": "xbox-x-1",
+        "startedAt": 1795464060000,
+        "durationMinutes": 120,
+        "rate": 15,
+        "mode": "prepaid",
+        "amount": 25,
+        "status": "completed",
+        "paidAmount": 25,
+        "paymentMethod": "cash",
+        "endedAt": 1795470540000
+      }
+    ],
+    "sessionExtensions": [
+      {
+        "id": "560fb407-9681-4359-970a-5434fd3fcfed",
+        "sessionId": "5a28a27c-6f8a-4d47-b09d-7765d2db0854",
+        "minutes": 30,
+        "amount": 10,
+        "createdAt": 1795475702415
+      },
+      {
+        "id": "6ee04c70-49f5-4a91-8844-f43bc42a981a",
+        "sessionId": "aba59c84-e24e-4db3-853a-e3e58c8725b1",
+        "minutes": 30,
+        "amount": 10,
+        "createdAt": 1795468563573
+      },
+      {
+        "id": "82552ac0-bc0b-40ff-b6fa-0a5460581416",
+        "sessionId": "aba59c84-e24e-4db3-853a-e3e58c8725b1",
+        "minutes": 30,
+        "amount": 10,
+        "createdAt": 1795468580822
+      },
+      {
+        "id": "88547594-79c3-4026-b267-cea3dcd8a37f",
+        "sessionId": "90e2877a-c265-4c90-a336-a1a5f44193f1",
+        "minutes": 30,
+        "amount": 10,
+        "createdAt": 1795468576273
+      },
+      {
+        "id": "95340cb6-062a-42cc-95f3-75f52ec9f8fd",
+        "sessionId": "90e2877a-c265-4c90-a336-a1a5f44193f1",
+        "minutes": 30,
+        "amount": 10,
+        "createdAt": 1795468562858
+      },
+      {
+        "id": "f5dce60c-ebb0-4d66-a8a0-61db13841cfc",
+        "sessionId": "1cbc4cc7-d80e-4ca5-b225-c1d28f2627aa",
+        "minutes": 30,
+        "amount": 10,
+        "createdAt": 1795475703282
+      }
+    ],
+    "tariffPlans": [
+      {
+        "id": "120",
+        "label": "2 horas",
+        "minutes": 120,
+        "ps2Price": 20,
+        "xboxPrice": 30
+      },
+      {
+        "id": "180",
+        "label": "3 horas",
+        "minutes": 180,
+        "ps2Price": 25,
+        "xboxPrice": 40
+      },
+      {
+        "id": "30",
+        "label": "30 minutos",
+        "minutes": 30,
+        "ps2Price": 5,
+        "xboxPrice": 10
+      },
+      {
+        "id": "60",
+        "label": "1 hora",
+        "minutes": 60,
+        "ps2Price": 10,
+        "xboxPrice": 15
+      }
+    ],
+    "payments": [
+      {
+        "id": "03efd57c-298d-458c-8d81-3351588e36f2",
+        "sessionId": "90e2877a-c265-4c90-a336-a1a5f44193f1",
+        "consoleId": "xbox-s-2",
+        "createdAt": 1795468576273,
+        "paidAt": 1795468576273,
+        "concept": "Extensión · 30 min",
+        "amount": 10,
+        "method": "cash",
+        "status": "void"
+      },
+      {
+        "id": "0445f63b-8c8c-492b-8ce7-9be798aa980e",
+        "sessionId": "6d0ae1fa-7597-4e32-89b2-5a1b33b781f3",
+        "consoleId": "xbox-s-1",
+        "createdAt": 1795466309617,
+        "paidAt": 1795466309617,
+        "concept": "Prepago · 60 min",
+        "amount": 15,
+        "method": "cash",
+        "status": "paid"
+      },
+      {
+        "id": "05b95267-ec23-4d20-99a3-7842024c9145",
+        "sessionId": "90e2877a-c265-4c90-a336-a1a5f44193f1",
+        "consoleId": "xbox-s-2",
+        "createdAt": 1795464102445,
+        "paidAt": 1795464102445,
+        "concept": "Prepago · 60 min",
+        "amount": 15,
+        "method": "cash",
+        "status": "void"
+      },
+      {
+        "id": "1efe2eb6-9e66-4eaa-a6e3-277d7dadb213",
+        "sessionId": "35c26ec6-d1e4-4262-a123-a40bd974d276",
+        "consoleId": "xbox-x-1",
+        "createdAt": 1795475564198,
+        "paidAt": 1795475564198,
+        "concept": "Prepago · 60 min",
+        "amount": 15,
+        "method": "cash",
+        "status": "paid"
+      },
+      {
+        "id": "2ced9a58-10e0-40a0-8f0c-7c154bbf50d6",
+        "sessionId": "1cbc4cc7-d80e-4ca5-b225-c1d28f2627aa",
+        "consoleId": "xbox-s-2",
+        "createdAt": 1795475689998,
+        "paidAt": 1795475689998,
+        "concept": "Prepago · 60 min",
+        "amount": 15,
+        "method": "cash",
+        "status": "void"
+      },
+      {
+        "id": "402dbce7-5779-460a-b31f-82feadb89a02",
+        "sessionId": "5a28a27c-6f8a-4d47-b09d-7765d2db0854",
+        "consoleId": "xbox-s-1",
+        "createdAt": 1795475688366,
+        "paidAt": 1795475688366,
+        "concept": "Prepago · 60 min",
+        "amount": 15,
+        "method": "cash",
+        "status": "void"
+      },
+      {
+        "id": "427c018e-b8ed-4266-848d-855ccb4d086c",
+        "sessionId": "5a28a27c-6f8a-4d47-b09d-7765d2db0854",
+        "consoleId": "xbox-s-1",
+        "createdAt": 1795475702415,
+        "paidAt": 1795475702415,
+        "concept": "Extensión · 30 min",
+        "amount": 10,
+        "method": "cash",
+        "status": "void"
+      },
+      {
+        "id": "6f077a33-e17f-4558-aac4-cce604ba5498",
+        "sessionId": "6ce877fc-3e4c-4b1e-b14c-4a27a25ad615",
+        "consoleId": "xbox-s-1",
+        "createdAt": 1795409421033,
+        "concept": "Prepago · 60 min",
+        "amount": 15,
+        "method": "cash",
+        "status": "paid"
+      },
+      {
+        "id": "6f9214ad-0bc6-416b-ab61-3a668534504d",
+        "sessionId": "1d6c8838-dea4-43d9-90bd-f6144555a0a6",
+        "consoleId": "xbox-s-1",
+        "createdAt": 1795411653006,
+        "concept": "Prepago · 60 min",
+        "amount": 15,
+        "method": "cash",
+        "status": "paid"
+      },
+      {
+        "id": "7c5a8401-12d1-4b4f-bd17-4e7a302a3f52",
+        "sessionId": "90e2877a-c265-4c90-a336-a1a5f44193f1",
+        "consoleId": "xbox-s-2",
+        "createdAt": 1795481408047,
+        "paidAt": 1795481408047,
+        "concept": "Ajuste de cobro al editar sesión",
+        "amount": 25,
+        "method": "cash",
+        "status": "paid"
+      },
+      {
+        "id": "8b2ae510-dec6-4ff7-884f-03ac2f73989d",
+        "sessionId": "00a4f88f-f2fb-4eb0-abbb-8541d73ef48b",
+        "consoleId": "xbox-s-2",
+        "createdAt": 1795409413550,
+        "concept": "Prepago · 60 min",
+        "amount": 15,
+        "method": "cash",
+        "status": "paid"
+      },
+      {
+        "id": "91c39574-1e07-4039-9021-495f826653fe",
+        "sessionId": "1cbc4cc7-d80e-4ca5-b225-c1d28f2627aa",
+        "consoleId": "xbox-s-2",
+        "createdAt": 1795481455595,
+        "paidAt": 1795481455595,
+        "concept": "Ajuste de cobro al editar sesión",
+        "amount": 20,
+        "method": "cash",
+        "status": "paid"
+      },
+      {
+        "id": "9cd8dadd-6c16-4426-9639-782faeb55418",
+        "sessionId": "77b46972-70d3-4732-9ef1-d25d344fe941",
+        "consoleId": "xbox-s-1",
+        "createdAt": 1795411649106,
+        "concept": "Prepago · 60 min",
+        "amount": 15,
+        "method": "cash",
+        "status": "paid"
+      },
+      {
+        "id": "a9398e17-bf60-4166-bcfa-d7f6612e5756",
+        "sessionId": "90e2877a-c265-4c90-a336-a1a5f44193f1",
+        "consoleId": "xbox-s-2",
+        "createdAt": 1795468562858,
+        "paidAt": 1795468562858,
+        "concept": "Extensión · 30 min",
+        "amount": 10,
+        "method": "cash",
+        "status": "void"
+      },
+      {
+        "id": "c1ba05e7-028c-4ec7-a655-3bac15c6fabe",
+        "sessionId": "aba59c84-e24e-4db3-853a-e3e58c8725b1",
+        "consoleId": "xbox-x-1",
+        "createdAt": 1795468563573,
+        "paidAt": 1795468563573,
+        "concept": "Extensión · 30 min",
+        "amount": 10,
+        "method": "cash",
+        "status": "void"
+      },
+      {
+        "id": "c2ee8352-cd7c-44b3-a3d1-e281e395e225",
+        "sessionId": "6802d0f7-b74c-4f3b-81bf-3277903b4295",
+        "consoleId": "ps2-1",
+        "createdAt": 1795409437816,
+        "concept": "Prepago · 60 min",
+        "amount": 10,
+        "method": "cash",
+        "status": "paid"
+      },
+      {
+        "id": "c3ad62ae-b5b1-4181-b7df-bfd07cb113ae",
+        "sessionId": "5a28a27c-6f8a-4d47-b09d-7765d2db0854",
+        "consoleId": "xbox-s-1",
+        "createdAt": 1795481450745,
+        "paidAt": 1795481450745,
+        "concept": "Ajuste de cobro al editar sesión",
+        "amount": 20,
+        "method": "cash",
+        "status": "paid"
+      },
+      {
+        "id": "d05f2e5e-5cd8-4f65-a92b-1ab1509c8fab",
+        "sessionId": "1cbc4cc7-d80e-4ca5-b225-c1d28f2627aa",
+        "consoleId": "xbox-s-2",
+        "createdAt": 1795475703282,
+        "paidAt": 1795475703282,
+        "concept": "Extensión · 30 min",
+        "amount": 10,
+        "method": "cash",
+        "status": "void"
+      },
+      {
+        "id": "d98a373c-ce9e-4ff6-be42-3b46c2b8dac9",
+        "sessionId": "6802d0f7-b74c-4f3b-81bf-3277903b4295",
+        "consoleId": "ps2-1",
+        "createdAt": 1795411936113,
+        "concept": "Saldo ajustado al editar sesión",
+        "amount": 5,
+        "method": "cash",
+        "status": "paid",
+        "paidAt": 1795413581749
+      },
+      {
+        "id": "e7798cc5-3861-491f-b87a-83b1fa3b093d",
+        "sessionId": "aba59c84-e24e-4db3-853a-e3e58c8725b1",
+        "consoleId": "xbox-x-1",
+        "createdAt": 1795481413330,
+        "paidAt": 1795481413330,
+        "concept": "Ajuste de cobro al editar sesión",
+        "amount": 25,
+        "method": "cash",
+        "status": "paid"
+      },
+      {
+        "id": "e7a509eb-4aaa-4d7a-bd30-893049869431",
+        "sessionId": "aba59c84-e24e-4db3-853a-e3e58c8725b1",
+        "consoleId": "xbox-x-1",
+        "createdAt": 1795468580822,
+        "paidAt": 1795468580822,
+        "concept": "Extensión · 30 min",
+        "amount": 10,
+        "method": "cash",
+        "status": "void"
+      },
+      {
+        "id": "f0e48eea-4f34-4776-9dee-5a1d65a1e17e",
+        "sessionId": "0a58ce82-5f6e-4714-b0a8-fc5d8f0ecf92",
+        "consoleId": "xbox-s-1",
+        "createdAt": 1795409396917,
+        "concept": "Prepago · 60 min",
+        "amount": 15,
+        "method": "cash",
+        "status": "paid"
+      },
+      {
+        "id": "f2abeaa9-70dd-4561-b14b-f187c90dd255",
+        "sessionId": "367d3bd8-8b34-48ac-a4e5-d6009bd20aef",
+        "consoleId": "xbox-x-1",
+        "createdAt": 1795470597999,
+        "paidAt": 1795470597999,
+        "concept": "Prepago · 60 min",
+        "amount": 15,
+        "method": "cash",
+        "status": "paid"
+      },
+      {
+        "id": "f4bd206a-e1a8-4a05-a2ab-363b96ef7a75",
+        "sessionId": "aba59c84-e24e-4db3-853a-e3e58c8725b1",
+        "consoleId": "xbox-x-1",
+        "createdAt": 1795464098929,
+        "paidAt": 1795464098929,
+        "concept": "Prepago · 60 min",
+        "amount": 15,
+        "method": "cash",
+        "status": "void"
+      }
+    ],
+    "expenses": [],
+    "settings": [
+      {
+        "key": "currency",
+        "value": "MXN"
+      },
+      {
+        "key": "profitabilityInputs",
+        "value": "{\"rent\":0,\"electricity\":300,\"internet\":450,\"otherFixed\":0,\"variableCosts\":0,\"daysOpen\":30,\"hoursPerDay\":12,\"consoleCount\":4,\"occupancy\":50,\"desiredProfit\":0,\"targetMargin\":20}"
+      },
+      {
+        "key": "rounding",
+        "value": "minute"
+      },
+      {
+        "key": "timezone",
+        "value": "America/Mexico_City"
+      },
+      {
+        "key": "uiTheme",
+        "value": "dark"
+      }
+    ],
+    "userActions": [
+      {
+        "action": "session.started",
+        "entity": "session",
+        "entityId": "90e2877a-c265-4c90-a336-a1a5f44193f1",
+        "summary": "Inició sesión en Xbox Series S.",
+        "details": "{\"mode\":\"prepaid\",\"durationMinutes\":60,\"amount\":15,\"paid\":true,\"method\":\"cash\"}",
+        "id": "128b3f9d-857b-437f-af2e-c75165532bb2",
+        "timestamp": 1795464102448
+      },
+      {
+        "action": "session.started",
+        "entity": "session",
+        "entityId": "1cbc4cc7-d80e-4ca5-b225-c1d28f2627aa",
+        "summary": "Inició sesión en Xbox Series S.",
+        "details": "{\"mode\":\"prepaid\",\"durationMinutes\":60,\"amount\":15,\"paid\":true,\"method\":\"cash\"}",
+        "id": "1a7d11b9-8502-44b6-b059-a5c10c8324f3",
+        "timestamp": 1795475690004
+      },
+      {
+        "action": "settings.theme.updated",
+        "entity": "settings",
+        "summary": "Cambió el tema a dark.",
+        "id": "23c6ac2e-332b-4a7a-b1cf-aaab6c4385d6",
+        "timestamp": 1795455940268
+      },
+      {
+        "action": "session.started",
+        "entity": "session",
+        "entityId": "aba59c84-e24e-4db3-853a-e3e58c8725b1",
+        "summary": "Inició sesión en Xbox Series X.",
+        "details": "{\"mode\":\"prepaid\",\"durationMinutes\":60,\"amount\":15,\"paid\":true,\"method\":\"cash\"}",
+        "id": "2c691691-3ac3-4efc-b269-f4b8061394c9",
+        "timestamp": 1795464098942
+      },
+      {
+        "action": "session.edited",
+        "entity": "session",
+        "entityId": "aba59c84-e24e-4db3-853a-e3e58c8725b1",
+        "summary": "Editó una sesión del historial.",
+        "details": "{\"consoleId\":\"xbox-x-1\",\"startedAt\":1795464060000,\"endedAt\":1795470540000,\"rate\":15,\"amount\":25,\"paidAmount\":25}",
+        "id": "2eaffac2-4c51-4168-8126-34259781529f",
+        "timestamp": 1795481413331
+      },
+      {
+        "action": "console.removed",
+        "entity": "console",
+        "entityId": "b828c7ea-4cbf-4a90-8605-f03c3e8e7644",
+        "summary": "Quitó la consola xxxx de la operación.",
+        "details": "{\"type\":\"XBOX S\",\"hourlyRate\":15}",
+        "id": "361f8dc5-29e0-4f9e-a149-c1291684c206",
+        "timestamp": 1795458630930
+      },
+      {
+        "action": "session.completed",
+        "entity": "session",
+        "entityId": "6d0ae1fa-7597-4e32-89b2-5a1b33b781f3",
+        "summary": "Finalizó sesión en Xbox Series S.",
+        "details": "{\"amount\":15,\"paidAmount\":15,\"due\":0,\"paid\":true,\"method\":\"cash\"}",
+        "id": "3fc4c961-ca5b-458b-8c15-34c72e46695e",
+        "timestamp": 1795470595152
+      },
+      {
+        "action": "session.completed",
+        "entity": "session",
+        "entityId": "90e2877a-c265-4c90-a336-a1a5f44193f1",
+        "summary": "Finalizó sesión en Xbox Series S.",
+        "details": "{\"amount\":35,\"paidAmount\":35,\"due\":0,\"paid\":true,\"method\":\"cash\"}",
+        "id": "4708f730-91ff-4278-a127-8abb7f7b6266",
+        "timestamp": 1795470590024
+      },
+      {
+        "action": "session.extended",
+        "entity": "session",
+        "entityId": "aba59c84-e24e-4db3-853a-e3e58c8725b1",
+        "summary": "Extendió una sesión 30 minutos.",
+        "details": "{\"amount\":10,\"method\":\"cash\"}",
+        "id": "4c7e747b-1bbf-4c69-ad30-6a6825ed0953",
+        "timestamp": 1795468580824
+      },
+      {
+        "action": "records.exported",
+        "entity": "export",
+        "summary": "Descargó los registros del negocio en CSV.",
+        "id": "50434c91-f9d8-4dd8-bdf6-dd078ae9f5ff",
+        "timestamp": 1795457110918
+      },
+      {
+        "action": "session.extended",
+        "entity": "session",
+        "entityId": "90e2877a-c265-4c90-a336-a1a5f44193f1",
+        "summary": "Extendió una sesión 30 minutos.",
+        "details": "{\"amount\":10,\"method\":\"cash\"}",
+        "id": "5e9082f1-6619-4563-b7bb-0dceabdc5f4c",
+        "timestamp": 1795468576277
+      },
+      {
+        "action": "consoles.reordered",
+        "entity": "console",
+        "summary": "Cambió el orden de las estaciones.",
+        "details": "{\"order\":[\"xbox-s-1\",\"ps2-1\",\"xbox-s-2\",\"xbox-x-1\"]}",
+        "id": "63c0c1b0-6f26-4c43-8184-0f9bb299e721",
+        "timestamp": 1795481855205
+      },
+      {
+        "action": "session.extended",
+        "entity": "session",
+        "entityId": "aba59c84-e24e-4db3-853a-e3e58c8725b1",
+        "summary": "Extendió una sesión 30 minutos.",
+        "details": "{\"amount\":10,\"method\":\"cash\"}",
+        "id": "6e007ca9-bf95-4bc0-af3b-2a7c393e6616",
+        "timestamp": 1795468563577
+      },
+      {
+        "action": "session.started",
+        "entity": "session",
+        "entityId": "367d3bd8-8b34-48ac-a4e5-d6009bd20aef",
+        "summary": "Inició sesión en Xbox Series X.",
+        "details": "{\"mode\":\"prepaid\",\"durationMinutes\":60,\"amount\":15,\"paid\":true,\"method\":\"cash\"}",
+        "id": "750b2a82-bc41-422c-bb93-018a1be8c980",
+        "timestamp": 1795470598006
+      },
+      {
+        "action": "session.started",
+        "entity": "session",
+        "entityId": "35c26ec6-d1e4-4262-a123-a40bd974d276",
+        "summary": "Inició sesión en Xbox Series X.",
+        "details": "{\"mode\":\"prepaid\",\"durationMinutes\":60,\"amount\":15,\"paid\":true,\"method\":\"cash\"}",
+        "id": "80009299-b48b-4451-ac59-da8588340429",
+        "timestamp": 1795475564214
+      },
+      {
+        "action": "backup.exported",
+        "entity": "backup",
+        "summary": "Descargó un respaldo completo.",
+        "id": "80b61aef-8c49-437c-a0f2-84ae9d124760",
+        "timestamp": 1795481866691
+      },
+      {
+        "action": "session.edited",
+        "entity": "session",
+        "entityId": "90e2877a-c265-4c90-a336-a1a5f44193f1",
+        "summary": "Editó una sesión del historial.",
+        "details": "{\"consoleId\":\"xbox-s-2\",\"startedAt\":1795464060000,\"endedAt\":1795470540000,\"rate\":15,\"amount\":25,\"paidAmount\":25}",
+        "id": "94b9dbf6-ba88-47be-948d-ac8f80d613fd",
+        "timestamp": 1795481408049
+      },
+      {
+        "action": "session.edited",
+        "entity": "session",
+        "entityId": "aba59c84-e24e-4db3-853a-e3e58c8725b1",
+        "summary": "Editó una sesión del historial.",
+        "details": "{\"consoleId\":\"xbox-x-1\",\"startedAt\":1795464060000,\"endedAt\":1795470540000,\"rate\":15,\"amount\":25}",
+        "id": "ac2ee80e-10f5-4f6e-b760-1d9e4c1f3a37",
+        "timestamp": 1795480195245
+      },
+      {
+        "action": "session.started",
+        "entity": "session",
+        "entityId": "6d0ae1fa-7597-4e32-89b2-5a1b33b781f3",
+        "summary": "Inició sesión en Xbox Series S.",
+        "details": "{\"mode\":\"prepaid\",\"durationMinutes\":60,\"amount\":15,\"paid\":true,\"method\":\"cash\"}",
+        "id": "afe10d85-fbf7-4c05-ae7d-fcda7d0c81f2",
+        "timestamp": 1795466309622
+      },
+      {
+        "action": "console.deleted",
+        "entity": "console",
+        "entityId": "b828c7ea-4cbf-4a90-8605-f03c3e8e7644",
+        "summary": "Eliminó definitivamente la consola xxxx.",
+        "details": "{\"type\":\"XBOX S\",\"hourlyRate\":15,\"sessions\":0,\"payments\":0}",
+        "id": "b724d244-8583-438b-be07-8552173137e0",
+        "timestamp": 1795458838140
+      },
+      {
+        "action": "session.extended",
+        "entity": "session",
+        "entityId": "1cbc4cc7-d80e-4ca5-b225-c1d28f2627aa",
+        "summary": "Extendió una sesión 30 minutos.",
+        "details": "{\"amount\":10,\"method\":\"cash\"}",
+        "id": "b7d306ea-cf06-4acb-b813-1342cae527ff",
+        "timestamp": 1795475703288
+      },
+      {
+        "action": "session.started",
+        "entity": "session",
+        "entityId": "5a28a27c-6f8a-4d47-b09d-7765d2db0854",
+        "summary": "Inició sesión en Xbox Series S.",
+        "details": "{\"mode\":\"prepaid\",\"durationMinutes\":60,\"amount\":15,\"paid\":true,\"method\":\"cash\"}",
+        "id": "b9ab62e5-3456-4700-8410-3f7b26d5b4ab",
+        "timestamp": 1795475688376
+      },
+      {
+        "action": "session.edited",
+        "entity": "session",
+        "entityId": "5a28a27c-6f8a-4d47-b09d-7765d2db0854",
+        "summary": "Editó una sesión del historial.",
+        "details": "{\"consoleId\":\"xbox-s-1\",\"startedAt\":1795475640000,\"endedAt\":1795480440000,\"rate\":15,\"amount\":20,\"paidAmount\":20}",
+        "id": "ba7037c2-fa72-4c2f-9ad4-c18174b362a2",
+        "timestamp": 1795481450746
+      },
+      {
+        "action": "session.extended",
+        "entity": "session",
+        "entityId": "90e2877a-c265-4c90-a336-a1a5f44193f1",
+        "summary": "Extendió una sesión 30 minutos.",
+        "details": "{\"amount\":10,\"method\":\"cash\"}",
+        "id": "c0170236-05d3-4464-b6e7-5cfb4205524f",
+        "timestamp": 1795468562870
+      },
+      {
+        "action": "session.edited",
+        "entity": "session",
+        "entityId": "90e2877a-c265-4c90-a336-a1a5f44193f1",
+        "summary": "Editó una sesión del historial.",
+        "details": "{\"consoleId\":\"xbox-s-2\",\"startedAt\":1795464060000,\"endedAt\":1795470540000,\"rate\":15,\"amount\":25}",
+        "id": "c0d40207-02b6-4b82-8978-382e5657b06a",
+        "timestamp": 1795480198794
+      },
+      {
+        "action": "session.extended",
+        "entity": "session",
+        "entityId": "5a28a27c-6f8a-4d47-b09d-7765d2db0854",
+        "summary": "Extendió una sesión 30 minutos.",
+        "details": "{\"amount\":10,\"method\":\"cash\"}",
+        "id": "c34dd2fb-6ac1-426f-a415-0bb1b6705424",
+        "timestamp": 1795475702421
+      },
+      {
+        "action": "console.created",
+        "entity": "console",
+        "entityId": "b828c7ea-4cbf-4a90-8605-f03c3e8e7644",
+        "summary": "Agregó la consola xxxx.",
+        "details": "{\"type\":\"XBOX S\",\"hourlyRate\":15}",
+        "id": "cbc7583d-9ad7-4033-901e-7862eb971c7e",
+        "timestamp": 1795457791599
+      },
+      {
+        "action": "session.completed",
+        "entity": "session",
+        "entityId": "1cbc4cc7-d80e-4ca5-b225-c1d28f2627aa",
+        "summary": "Finalizó sesión en Xbox Series S.",
+        "details": "{\"amount\":25,\"paidAmount\":25,\"due\":0,\"paid\":true,\"method\":\"cash\"}",
+        "id": "cd531887-7131-4fcf-b984-f7f01899b737",
+        "timestamp": 1795480493015
+      },
+      {
+        "action": "session.completed",
+        "entity": "session",
+        "entityId": "aba59c84-e24e-4db3-853a-e3e58c8725b1",
+        "summary": "Finalizó sesión en Xbox Series X.",
+        "details": "{\"amount\":35,\"paidAmount\":35,\"due\":0,\"paid\":true,\"method\":\"cash\"}",
+        "id": "d2e97acb-23c5-4c14-ae95-8d7a3aacc084",
+        "timestamp": 1795470591785
+      },
+      {
+        "action": "session.edited",
+        "entity": "session",
+        "entityId": "1cbc4cc7-d80e-4ca5-b225-c1d28f2627aa",
+        "summary": "Editó una sesión del historial.",
+        "details": "{\"consoleId\":\"xbox-s-2\",\"startedAt\":1795475640000,\"endedAt\":1795480440000,\"rate\":15,\"amount\":20,\"paidAmount\":20}",
+        "id": "dcd60ea8-9c1b-4139-8779-ad72e73a4806",
+        "timestamp": 1795481455596
+      },
+      {
+        "action": "settings.theme.updated",
+        "entity": "settings",
+        "summary": "Cambió el tema a light.",
+        "id": "e1dae2e2-85e0-4613-b44c-bba7228b1d30",
+        "timestamp": 1795456601920
+      },
+      {
+        "action": "session.completed",
+        "entity": "session",
+        "entityId": "35c26ec6-d1e4-4262-a123-a40bd974d276",
+        "summary": "Finalizó sesión en Xbox Series X.",
+        "details": "{\"amount\":15,\"paidAmount\":15,\"due\":0,\"paid\":true,\"method\":\"cash\"}",
+        "id": "e7030b1e-9d02-4056-a5e0-bc0fe613ade9",
+        "timestamp": 1795479166256
+      },
+      {
+        "action": "session.completed",
+        "entity": "session",
+        "entityId": "367d3bd8-8b34-48ac-a4e5-d6009bd20aef",
+        "summary": "Finalizó sesión en Xbox Series X.",
+        "details": "{\"amount\":15,\"paidAmount\":15,\"due\":0,\"paid\":true,\"method\":\"cash\"}",
+        "id": "e723a219-e636-40eb-9a49-f793963101e4",
+        "timestamp": 1795474752910
+      },
+      {
+        "action": "settings.theme.updated",
+        "entity": "settings",
+        "summary": "Cambió el tema a dark.",
+        "id": "ec3e72ec-652e-4bce-8def-752544550f95",
+        "timestamp": 1795457099096
+      },
+      {
+        "action": "session.completed",
+        "entity": "session",
+        "entityId": "5a28a27c-6f8a-4d47-b09d-7765d2db0854",
+        "summary": "Finalizó sesión en Xbox Series S.",
+        "details": "{\"amount\":25,\"paidAmount\":25,\"due\":0,\"paid\":true,\"method\":\"cash\"}",
+        "id": "ed8612e8-d387-4f8a-a7f7-748c41427176",
+        "timestamp": 1795480491487
+      },
+      {
+        "action": "audit_file.connected",
+        "entity": "audit",
+        "summary": "Vinculó el archivo local de acciones.",
+        "details": "{\"fileName\":\"compubac-sessions.csv\"}",
+        "id": "f4f3e92d-9318-4f43-90a9-dee20ead1bbe",
+        "timestamp": 1795456043852
+      },
+      {
+        "action": "settings.theme.updated",
+        "entity": "settings",
+        "summary": "Cambió el tema a light.",
+        "id": "fbd0e405-6d2b-49fb-a2c1-f15d841845d0",
+        "timestamp": 1795455939630
+      }
+    ]
+  }
+}

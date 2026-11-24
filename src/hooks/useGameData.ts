@@ -20,7 +20,7 @@ export function useGameData() {
     const [consoleRows, sessionRows, paymentRows, tariffRows, expenseRows] = await Promise.all([
       db.consoles.toArray(), db.sessions.toArray(), db.payments.toArray(), db.tariffPlans.toArray(), db.expenses.toArray(),
     ])
-    setConsoles(consoleRows)
+    setConsoles(consoleRows.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)))
     setSessions(sessionRows)
     setPayments(paymentRows)
     setTariffs(tariffRows)

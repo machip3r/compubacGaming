@@ -24,7 +24,7 @@ interface SettingsPageProps {
 export function SettingsPage(props: SettingsPageProps) {
   const { consoles, tariffs, onAddConsole, onEditConsole, onRemoveConsole, onRestoreConsole, onDeleteConsole, onExportCsv, onExportBackup, onImportBackup, auditStatus, onConnectAuditCsv, onRequestAuditPermission, onDownloadAuditCsv } = props
   const backupInput = useRef<HTMLInputElement>(null)
-  const orderedConsoles = [...consoles].sort((a, b) => Number(b.active) - Number(a.active))
+  const orderedConsoles = [...consoles].sort((a, b) => Number(b.active) - Number(a.active) || (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
 
   return <>
     <section className="panel settings-panel">

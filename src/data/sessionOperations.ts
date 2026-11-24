@@ -1,6 +1,6 @@
 import { db } from '../db'
 import type { GameConsole, GameSession, PaymentMethod } from '../domain'
-import { formatMoney, openSessionAmount } from '../domain'
+import { openSessionAmount } from '../domain'
 import { recordUserAction } from './audit'
 
 export class SessionConflictError extends Error {
@@ -85,10 +85,42 @@ export async function extendSession(session: GameSession, amount: number, method
   await db.transaction('rw', db.sessions, db.sessionExtensions, db.payments, db.userActions, async () => {
     const current = await db.sessions.get(session.id)
     if (!current || current.status !== 'active') throw new SessionConflictError('La sesión ya no está activa. Actualiza la pantalla antes de extenderla.')
-    await db.sessions.update(current.id, { durationMinutes: (current.durationMinutes ?? 0) + 30, amount: current.amount + amount, paidAmount: current.paidAmount + amount })
+    const timerStartedAt = current.transferStartedAt ?? current.startedAt
+    const expiredPrepaid = current.mode === 'prepaid' && current.durationMinutes !== undefined && createdAt >= timerStartedAt + current.durationMinutes * 60_000
+    const durationMinutes = expiredPrepaid ? (createdAt - timerStartedAt) / 60_000 + 30 : (current.durationMinutes ?? 0) + 30
+    await db.sessions.update(current.id, { durationMinutes, initialDurationMinutes: (current.initialDurationMinutes ?? current.durationMinutes ?? 0) + 30, amount: current.amount + amount, paidAmount: current.paidAmount + amount })
     await db.sessionExtensions.add({ id: crypto.randomUUID(), sessionId: current.id, minutes: 30, amount, createdAt })
     await db.payments.add({ id: crypto.randomUUID(), sessionId: current.id, consoleId: current.consoleId, createdAt, paidAt: createdAt, concept: 'Extensión · 30 min', amount, method, status: 'paid' })
     await recordUserAction({ action: 'session.extended', entity: 'session', entityId: current.id, summary: 'Extendió una sesión 30 minutos.', details: JSON.stringify({ amount, method }) })
+  })
+}
+
+export async function transferSessionToConsole(sessionId: string, destinationConsoleId: string) {
+  const transferredAt = Date.now()
+  await db.transaction('rw', db.sessions, db.consoles, db.userActions, async () => {
+    const session = await db.sessions.get(sessionId)
+    if (!session || session.status !== 'active' || session.mode !== 'prepaid' || session.durationMinutes === undefined) {
+      throw new SessionConflictError('Solo se pueden transferir sesiones prepagadas que sigan activas.')
+    }
+    const sourceConsole = await db.consoles.get(session.consoleId)
+    const destination = await db.consoles.get(destinationConsoleId)
+    const isXbox = (consoleInfo?: GameConsole) => Boolean(consoleInfo && (consoleInfo.category === 'XBOX' || /xbox/i.test(consoleInfo.type)))
+    if (!sourceConsole || !isXbox(sourceConsole) || !destination || !isXbox(destination)) {
+      throw new SessionConflictError('La transferencia solo está disponible entre consolas Xbox.')
+    }
+    if (!destination.active || destination.status !== 'available') {
+      throw new SessionConflictError('La consola elegida ya no está disponible. Actualiza la pantalla e inténtalo de nuevo.')
+    }
+    const activeAtDestination = await db.sessions.where('consoleId').equals(destination.id).filter(item => item.status === 'active').first()
+    if (activeAtDestination) throw new SessionConflictError('La consola elegida ya tiene una sesión activa.')
+    const timerStartedAt = session.transferStartedAt ?? session.startedAt
+    const remainingMs = timerStartedAt + session.durationMinutes * 60_000 - transferredAt
+    if (remainingMs <= 0) throw new SessionConflictError('La sesión ya terminó. Extiéndela antes de transferir tiempo.')
+    const remainingMinutes = remainingMs / 60_000
+    await db.sessions.update(session.id, { consoleId: destination.id, transferStartedAt: transferredAt, initialDurationMinutes: session.initialDurationMinutes ?? session.durationMinutes, durationMinutes: remainingMinutes })
+    await db.consoles.update(sourceConsole.id, { status: 'available' })
+    await db.consoles.update(destination.id, { status: 'occupied' })
+    await recordUserAction({ action: 'session.transferred', entity: 'session', entityId: session.id, summary: `Movió una sesión de ${sourceConsole.name} a ${destination.name}.`, details: JSON.stringify({ fromConsoleId: sourceConsole.id, toConsoleId: destination.id, remainingMinutes, transferredAt }) })
   })
 }
 
@@ -111,7 +143,9 @@ export async function updateCompletedSession(input: {
   endedAt: number
   rate: number
   amount: number
+  paidAmount: number
   amountChanged: boolean
+  paidAmountChanged: boolean
 }) {
   await db.transaction('rw', db.sessions, db.payments, db.consoles, db.userActions, async () => {
     const current = await db.sessions.get(input.session.id)
@@ -119,16 +153,26 @@ export async function updateCompletedSession(input: {
     const targetConsole = await db.consoles.get(input.consoleId)
     if (!targetConsole) throw new SessionConflictError('No se encontró la consola seleccionada.')
     const payments = await db.payments.where('sessionId').equals(input.session.id).toArray()
-    const paidTotal = payments.filter(payment => payment.status === 'paid').reduce((sum, payment) => sum + payment.amount, 0)
-    if (input.amount < paidTotal) throw new SessionConflictError(`El total debe ser al menos ${formatMoney(paidTotal)}.`)
-    await db.sessions.update(current.id, { consoleId: input.consoleId, startedAt: input.startedAt, endedAt: input.endedAt, rate: input.rate, amount: input.amount, paidAmount: paidTotal })
+    const paidPayments = payments.filter(payment => payment.status === 'paid')
+    const currentPaidTotal = paidPayments.reduce((sum, payment) => sum + payment.amount, 0)
+    await db.sessions.update(current.id, { consoleId: input.consoleId, startedAt: input.startedAt, endedAt: input.endedAt, rate: input.rate, amount: input.amount, paidAmount: input.paidAmount })
     await db.payments.where('sessionId').equals(current.id).modify({ consoleId: input.consoleId })
-    if (input.amountChanged) {
+    if (input.paidAmountChanged) {
+      if (input.paidAmount < currentPaidTotal) {
+        for (const payment of paidPayments) await db.payments.update(payment.id, { status: 'void' })
+      }
+      const adjustment = input.paidAmount - (input.paidAmount < currentPaidTotal ? 0 : currentPaidTotal)
+      if (adjustment > 0) {
+        const adjustedAt = Date.now()
+        await db.payments.add({ id: crypto.randomUUID(), sessionId: current.id, consoleId: input.consoleId, createdAt: adjustedAt, paidAt: adjustedAt, concept: 'Ajuste de cobro al editar sesión', amount: adjustment, method: current.paymentMethod ?? 'cash', status: 'paid' })
+      }
+    }
+    if (input.amountChanged || input.paidAmountChanged) {
       await db.payments.where({ sessionId: current.id, status: 'pending' }).modify({ status: 'void' })
-      const due = Math.max(0, input.amount - paidTotal)
+      const due = Math.max(0, input.amount - input.paidAmount)
       if (due > 0) await db.payments.add({ id: crypto.randomUUID(), sessionId: current.id, consoleId: input.consoleId, createdAt: Date.now(), concept: 'Saldo ajustado al editar sesión', amount: due, method: input.session.paymentMethod ?? 'cash', status: 'pending' })
     }
-    await recordUserAction({ action: 'session.edited', entity: 'session', entityId: current.id, summary: 'Editó una sesión del historial.', details: JSON.stringify({ consoleId: input.consoleId, startedAt: input.startedAt, endedAt: input.endedAt, rate: input.rate, amount: input.amount }) })
+    await recordUserAction({ action: 'session.edited', entity: 'session', entityId: current.id, summary: 'Editó una sesión del historial.', details: JSON.stringify({ consoleId: input.consoleId, startedAt: input.startedAt, endedAt: input.endedAt, rate: input.rate, amount: input.amount, paidAmount: input.paidAmount }) })
   })
 }
 
