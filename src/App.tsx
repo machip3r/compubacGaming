@@ -18,6 +18,7 @@ import { ConsoleDialog } from './features/consoles/ConsoleDialog'
 import { ExpenseDialog } from './features/finance/ExpenseDialog'
 import { SessionDialog } from './features/sessions/SessionDialog'
 import type { SessionModal } from './features/sessions/SessionDialog'
+import { ExtensionDialog } from './features/sessions/ExtensionDialog'
 import { DashboardPage } from './features/consoles/DashboardPage'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { TransferSessionDialog } from './features/sessions/TransferSessionDialog'
@@ -58,6 +59,7 @@ export default function App() {
   const [method, setMethod] = useState<PaymentMethod>('cash')
   const [sessionToEdit, setSessionToEdit] = useState<GameSession|null>(null)
   const [sessionToTransfer, setSessionToTransfer] = useState<GameSession|null>(null)
+  const [extensionRequest, setExtensionRequest] = useState<{ session: GameSession; consoleInfo: GameConsole; initialMinutes: number } | null>(null)
   useLayoutEffect(() => {
     const applyPath = () => {
       const nextPath = resolvePath(window.location.pathname)
@@ -132,8 +134,18 @@ export default function App() {
     catch (error) { await showMessageDialog('No se pudo finalizar', error instanceof SessionConflictError ? error.message : 'Ocurrió un error al finalizar la sesión. Inténtalo de nuevo.') }
   }
   const extend = async (s: GameSession, c: GameConsole) => {
-    try { await extendSession(s, tariffPrice(c, 30, tariffs), method); await refresh() }
-    catch (error) { await showMessageDialog('No se pudo extender', error instanceof SessionConflictError ? error.message : 'Ocurrió un error al extender la sesión. Inténtalo de nuevo.') }
+    setExtensionRequest({ session: s, consoleInfo: c, initialMinutes: 30 })
+  }
+  const extendCustom = async (s: GameSession, c: GameConsole) => {
+    setExtensionRequest({ session: s, consoleInfo: c, initialMinutes: 15 })
+  }
+  const saveExtension = async (minutes: number, additionalCharge: number) => {
+    if (!extensionRequest) return
+    const { session } = extensionRequest
+    try {
+      await extendSession(session, additionalCharge, method, minutes)
+      setExtensionRequest(null); await refresh()
+    } catch (error) { await showMessageDialog('No se pudo extender', error instanceof SessionConflictError ? error.message : 'Ocurrió un error al guardar la extensión. Inténtalo de nuevo.') }
   }
   const transferSession = async (session: GameSession, destinationConsoleId: string) => {
     try { await transferSessionToConsole(session.id, destinationConsoleId); setSessionToTransfer(null); await refresh() }
@@ -311,7 +323,7 @@ export default function App() {
           todayHours={todayHours} recent={recent} now={now} onNavigate={navigate}
           onStart={consoleInfo => setModal({ kind: 'start', console: consoleInfo })}
           onFinish={(session, consoleInfo) => setModal({ kind: 'finish', session, console: consoleInfo })}
-          onExtend={extend} onCancel={cancelSession} onReorder={reorderConsoles}
+          onExtend={extend} onCustomExtend={extendCustom} onCancel={cancelSession} onReorder={reorderConsoles}
           onTransfer={session => setSessionToTransfer(session)}
         />}
         {page === 'Sesiones' && <SessionsPage sessions={sessions} consoles={consoles} onFinish={(session, consoleInfo) => setModal({ kind: 'finish', session, console: consoleInfo })} onEdit={openSessionEditor} onDelete={deleteSession} />}
@@ -328,6 +340,7 @@ export default function App() {
     {modal && <SessionDialog modal={modal} now={now} tariffs={tariffs} method={method} onMethodChange={setMethod}
       onClose={() => setModal(null)} onBegin={begin} onFinish={finish}
     />}
+    {extensionRequest && <ExtensionDialog consoleInfo={extensionRequest.consoleInfo} tariffs={tariffs} initialMinutes={extensionRequest.initialMinutes} onClose={()=>setExtensionRequest(null)} onSave={(minutes,additionalCharge)=>void saveExtension(minutes,additionalCharge)}/>}
     {sessionToTransfer && consoles.some(consoleInfo=>consoleInfo.id===sessionToTransfer.consoleId) && <TransferSessionDialog session={sessionToTransfer} source={consoles.find(consoleInfo=>consoleInfo.id===sessionToTransfer.consoleId)!} consoles={consoles} now={now} onClose={()=>setSessionToTransfer(null)} onTransfer={destinationId=>void transferSession(sessionToTransfer,destinationId)}/>}
     {sessionToEdit && <SessionEditorDialog session={sessionToEdit} consoles={consoles}
       onClose={() => setSessionToEdit(null)} onSave={saveSessionEdit}

@@ -634,3 +634,31 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .card-actions { grid-template-columns: repeat(2,minmax(0,1fr)); }
 @media (max-width: 700px) { .card-actions { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 .station-card-controls { margin-left: auto; justify-content: flex-end; }
+.card-actions { grid-template-columns: 38px repeat(2,minmax(0,1fr)); }
+.custom-extend-button { width: 38px !important; padding: 0 !important; color: #287a82; background: #e8f8f8; border: 1px solid #a9dfe2; }
+.custom-extend-button:hover { color: #155b65; background: #d8f2f3; border-color: #51d7dd; }
+.shell[data-theme="dark"] .custom-extend-button { color: #b8f5f6; background: #1b3d50; border-color: #376276; }
+.shell[data-theme="dark"] .custom-extend-button:hover { color: #fff; background: #24536a; border-color: #58d3e3; }
+@media (max-width: 700px) { .card-actions { grid-template-columns: 38px minmax(0,1fr) minmax(0,1fr); } }
+
+.extension-modal { max-width: 470px; }
+.extension-modal .edit-session-help { margin-bottom: 12px; }
+.extension-minutes { display: flex; align-items: center; gap: 9px; }
+.extension-minutes .edit-input { width: 100%; }
+.extension-minutes > span { color: #71829b; font-size: 13px; }
+.extension-charge-toggle { display: flex; align-items: center; gap: 9px; margin-top: 16px; color: #29436b; font-size: 13px; font-weight: 600; cursor: pointer; }
+.extension-charge-toggle input { width: 17px; height: 17px; accent-color: #168a9a; }
+.extension-extra-field { margin-top: 8px; }
+.extension-extra-field .field-label { display: block; margin: 10px 0 6px; }
+.extension-error { margin: 5px 0 0; color: #a23c3c; font-size: 12px; }
+.extension-total { display: grid; grid-template-columns: 1fr auto; gap: 8px 14px; margin-top: 17px; padding: 12px; border: 1px solid #dce5ef; border-radius: 7px; color: #60738e; background: #f5f9fd; font-size: 13px; }
+.extension-total b { color: #29436b; }
+.extension-total strong { color: #142648; font-size: 14px; }
+.shell[data-theme="dark"] .extension-charge-toggle { color: #d4e2f3; }
+.shell[data-theme="dark"] .extension-minutes > span { color: #b1bfd2; }
+.shell[data-theme="dark"] .extension-total { color: #b1bfd2; background: #10233e; border-color: #3b587b; }
+.shell[data-theme="dark"] .extension-total b,
+.shell[data-theme="dark"] .extension-total strong { color: #edf3fb; }
+.shell[data-theme="dark"] .extension-error { color: #ffb7bb; }
+.extension-recommendation { margin: 7px 0 0; color: #667895; font-size: 12px; line-height: 1.45; }
+.shell[data-theme="dark"] .extension-recommendation { color: #b1bfd2; }

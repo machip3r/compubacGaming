@@ -1,6 +1,6 @@
 import { db } from '../db'
 import type { GameConsole, GameSession, PaymentMethod } from '../domain'
-import { openSessionAmount } from '../domain'
+import { formatMoney, openSessionAmount } from '../domain'
 import { recordUserAction } from './audit'
 
 export class SessionConflictError extends Error {
@@ -80,18 +80,18 @@ export async function cancelSession(sessionId: string, reason: string) {
   })
 }
 
-export async function extendSession(session: GameSession, amount: number, method: PaymentMethod) {
+export async function extendSession(session: GameSession, amount: number, method: PaymentMethod, minutes = 30) {
   const createdAt = Date.now()
   await db.transaction('rw', db.sessions, db.sessionExtensions, db.payments, db.userActions, async () => {
     const current = await db.sessions.get(session.id)
     if (!current || current.status !== 'active') throw new SessionConflictError('La sesión ya no está activa. Actualiza la pantalla antes de extenderla.')
     const timerStartedAt = current.transferStartedAt ?? current.startedAt
     const expiredPrepaid = current.mode === 'prepaid' && current.durationMinutes !== undefined && createdAt >= timerStartedAt + current.durationMinutes * 60_000
-    const durationMinutes = expiredPrepaid ? (createdAt - timerStartedAt) / 60_000 + 30 : (current.durationMinutes ?? 0) + 30
-    await db.sessions.update(current.id, { durationMinutes, initialDurationMinutes: (current.initialDurationMinutes ?? current.durationMinutes ?? 0) + 30, amount: current.amount + amount, paidAmount: current.paidAmount + amount })
-    await db.sessionExtensions.add({ id: crypto.randomUUID(), sessionId: current.id, minutes: 30, amount, createdAt })
-    await db.payments.add({ id: crypto.randomUUID(), sessionId: current.id, consoleId: current.consoleId, createdAt, paidAt: createdAt, concept: 'Extensión · 30 min', amount, method, status: 'paid' })
-    await recordUserAction({ action: 'session.extended', entity: 'session', entityId: current.id, summary: 'Extendió una sesión 30 minutos.', details: JSON.stringify({ amount, method }) })
+    const durationMinutes = expiredPrepaid ? (createdAt - timerStartedAt) / 60_000 + minutes : (current.durationMinutes ?? 0) + minutes
+    await db.sessions.update(current.id, { durationMinutes, initialDurationMinutes: (current.initialDurationMinutes ?? current.durationMinutes ?? 0) + minutes, amount: current.amount + amount, paidAmount: current.paidAmount + amount })
+    await db.sessionExtensions.add({ id: crypto.randomUUID(), sessionId: current.id, minutes, amount, createdAt })
+    if (amount > 0) await db.payments.add({ id: crypto.randomUUID(), sessionId: current.id, consoleId: current.consoleId, createdAt, paidAt: createdAt, concept: `Extensión · ${minutes} min`, amount, method, status: 'paid' })
+    await recordUserAction({ action: 'session.extended', entity: 'session', entityId: current.id, summary: `Agregó ${minutes} minutos${amount > 0 ? ` con un cobro de ${formatMoney(amount)}` : ' sin costo'}.`, details: JSON.stringify({ minutes, amount, charged: amount > 0, method }) })
   })
 }
 
