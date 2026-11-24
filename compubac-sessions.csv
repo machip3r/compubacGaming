@@ -37,3 +37,6 @@
 "63c0c1b0-6f26-4c43-8184-0f9bb299e721","1795481855205","consoles.reordered","console","","Cambió el orden de las estaciones.","{""order"":[""xbox-s-1"",""ps2-1"",""xbox-s-2"",""xbox-x-1""]}"
 "80b61aef-8c49-437c-a0f2-84ae9d124760","1795481866691","backup.exported","backup","","Descargó un respaldo completo.",""
 "1f34b3ca-7d12-434f-ab6a-474da5a95af7","1795481894339","audit_file.connected","audit","","Vinculó el archivo local de acciones.","{""fileName"":""compubac-sessions.csv""}"
+"97a4c741-e245-4d7f-8b7c-355a5b0e40e7","1795483366338","session.started","session","d9bbe527-03b8-4415-8b24-a87cb617f536","Inició sesión en Xbox Series X.","{""mode"":""prepaid"",""durationMinutes"":30,""amount"":10,""paid"":true,""method"":""cash""}"
+"49418200-2c1a-4ff5-9f72-4f999928b7b3","1795483369412","session.started","session","4418df60-9c79-40b5-a626-83f43d00b458","Inició sesión en Xbox Series S.","{""mode"":""prepaid"",""durationMinutes"":30,""amount"":10,""paid"":true,""method"":""cash""}"
+"002404f0-385d-4ff6-a22b-7947ca916e4d","1795483701678","session.started","session","489b15fd-639a-457a-a02d-374f6f3e8617","Inició sesión en PlayStation 2.","{""mode"":""prepaid"",""durationMinutes"":60,""amount"":10,""paid"":true,""method"":""cash""}"

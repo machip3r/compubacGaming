@@ -604,12 +604,7 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .console-card[role="group"]:focus-visible { outline: 2px solid #168a9a; outline-offset: 3px; }
 .shell[data-theme="dark"] .console-card[role="group"]:focus-visible { outline-color: #51d7dd; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-.card-actions { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 6px; }
 .card-actions .button { min-width: 0; width: 100%; padding: 0 6px; font-size: 11px; white-space: nowrap; }
-.transfer-session-button { color: #245d86; background: #e8f4fb; border: 1px solid #b9d9ec; }
-.transfer-session-button:hover { background: #d8edf8; }
-.shell[data-theme="dark"] .transfer-session-button { color: #d8f4ff; background: #1b3d50; border-color: #376276; }
-.shell[data-theme="dark"] .transfer-session-button:hover { background: #24536a; }
 .transfer-session-modal { max-width: 480px; }
 .transfer-route { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 18px; padding: 13px; border: 1px solid #dce5ef; border-radius: 8px; background: #f5f9fd; }
 .transfer-route > div { min-width: 0; display: grid; gap: 4px; }
@@ -623,5 +618,19 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .shell[data-theme="dark"] .transfer-route > svg { color: #51d7dd; }
 @media (max-width: 700px) { .card-actions { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 
-.card-actions:not(.has-transfer) { grid-template-columns: minmax(0,1fr) 38px minmax(0,1fr); }
-@media (max-width: 700px) { .card-actions:not(.has-transfer) { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+
+.station-card-controls { display: flex; align-items: center; gap: 6px; }
+
+.station-card-controls { display: flex; align-items: center; gap: 7px; }
+.station-session-action { display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 1px solid; border-radius: 6px; }
+.station-session-action.transfer { color: #245d86; background: #e8f4fb; border-color: #b9d9ec; }
+.station-session-action.transfer:hover { background: #d8edf8; }
+.station-session-action.cancel { color: #a13d46; background: #fff5f5; border-color: #e7c5c8; }
+.station-session-action.cancel:hover { color: #842d37; background: #fdecec; border-color: #d99ba2; }
+.shell[data-theme="dark"] .station-session-action.transfer { color: #d8f4ff; background: #1b3d50; border-color: #376276; }
+.shell[data-theme="dark"] .station-session-action.transfer:hover { background: #24536a; }
+.shell[data-theme="dark"] .station-session-action.cancel { color: #ffb7bb; background: #4c2d39; border-color: #80505b; }
+.shell[data-theme="dark"] .station-session-action.cancel:hover { color: #fff; background: #633743; border-color: #b76c78; }
+.card-actions { grid-template-columns: repeat(2,minmax(0,1fr)); }
+@media (max-width: 700px) { .card-actions { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+.station-card-controls { margin-left: auto; justify-content: flex-end; }
