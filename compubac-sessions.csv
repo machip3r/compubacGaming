@@ -50,3 +50,6 @@
 "64dd2bf2-f0a0-4735-92cc-d8a0ccb45d97","1795486497405","session.deleted","session","9ee535ca-ed76-4f8d-a7b9-759a80a80c56","Eliminó una sesión y sus movimientos relacionados.","{""consoleId"":""xbox-x-1""}"
 "94a32bc9-d82d-4d96-a2be-110468823e74","1795486985002","session.completed","session","4418df60-9c79-40b5-a626-83f43d00b458","Finalizó sesión en Xbox Series S.","{""amount"":20,""paidAmount"":20,""due"":0,""paid"":true,""method"":""cash""}"
 "8f3a4125-63a6-42fa-b5e7-565f017ffc40","1795487070701","session.started","session","0c629265-8c46-4c47-befa-26487fbb10c7","Inició sesión en Xbox Series S.","{""mode"":""prepaid"",""durationMinutes"":60,""amount"":15,""paid"":false,""method"":""cash""}"
+"bb52de69-2e1b-4909-a03c-19e6a12c01b5","1795489840135","session.completed","session","0c629265-8c46-4c47-befa-26487fbb10c7","Finalizó sesión en Xbox Series S.","{""amount"":15,""paidAmount"":0,""due"":15,""paid"":true,""method"":""cash""}"
+"9c55ea41-c181-4664-a2f8-952db5114617","1795489842150","session.completed","session","a6841164-67b7-4bd6-beb5-bbf914fdbca2","Finalizó sesión en Xbox Series X.","{""amount"":15,""paidAmount"":0,""due"":15,""paid"":true,""method"":""cash""}"
+"4d869fe6-d9cd-404d-a380-e98e171befd0","1795489883559","calculator.assumptions.saved","settings","","Guardó los supuestos de rentabilidad.",""
