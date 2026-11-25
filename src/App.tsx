@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { BarChart3, CalendarClock, LayoutDashboard, Moon, Settings2, SlidersHorizontal, Sun } from 'lucide-react'
+import { BarChart3, CalendarClock, LayoutDashboard, Moon, Settings2, ShoppingBag, SlidersHorizontal, Sun } from 'lucide-react'
 import { db } from './db'
 import { consoleCatalog, formatMoney, type Expense, type GameConsole, type GameSession, type Payment, type PaymentMethod } from './domain'
 import { tariffPrice } from './domain/pricing'
@@ -7,7 +7,7 @@ import { createBackup, parseBackup, restoreBackup } from './data/backup'
 import { exportCsv } from './data/exports'
 import { recordUserAction } from './data/audit'
 import { connectAuditCsv, downloadAuditCsv, requestAuditCsvPermission } from './data/auditCsv'
-import { cancelSession as cancelStoredSession, deleteSessionRecords, extendSession, finishSession, getSessionRelatedCounts, markPaymentPaid as markStoredPaymentPaid, SessionConflictError, startSession, transferSessionToConsole, updateCompletedSession } from './data/sessionOperations'
+import { cancelSession as cancelStoredSession, deleteSessionRecords, extendSession, finishSession, getSessionRelatedCounts, markPaymentPaid as markStoredPaymentPaid, SessionConflictError, setSessionTimeLimit, startSession, transferSessionToConsole, updateCompletedSession } from './data/sessionOperations'
 import Calculator from './Calculator'
 import { DialogView, type AppDialog } from './shared/AppDialog'
 import { downloadFile } from './shared/downloadFile'
@@ -20,6 +20,8 @@ import { SessionDialog } from './features/sessions/SessionDialog'
 import type { SessionModal } from './features/sessions/SessionDialog'
 import { ExtensionDialog } from './features/sessions/ExtensionDialog'
 import { DashboardPage } from './features/consoles/DashboardPage'
+import { SnackSalesPage } from './features/snacks/SnackSalesPage'
+import { createSnackSale, saveSnackProduct, SnackOperationError } from './data/snackOperations'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { TransferSessionDialog } from './features/sessions/TransferSessionDialog'
 import { useGameData } from './hooks/useGameData'
@@ -29,6 +31,7 @@ type ConsoleDialogState = { mode: 'add' } | { mode: 'edit'; consoleInfo: GameCon
 const parseDateTimeInput = (value:string) => { const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value); if (!match) return NaN; const [, year, month, day, hour, minute] = match; const y=Number(year), mo=Number(month), d=Number(day), h=Number(hour), mi=Number(minute); const date = new Date(y, mo-1, d, h, mi); return date.getFullYear()===y && date.getMonth()===mo-1 && date.getDate()===d && date.getHours()===h && date.getMinutes()===mi ? date.getTime() : NaN }
 const nav = [
   { label: 'Consolas', path: '/consoles', icon: LayoutDashboard },
+  { label: 'Snacks', path: '/snacks', icon: ShoppingBag },
   { label: 'Sesiones', path: '/sessions', icon: CalendarClock },
   { label: 'Finanzas', path: '/finance', icon: BarChart3 },
   { label: 'Calculadora', path: '/calculator', icon: SlidersHorizontal },
@@ -49,7 +52,7 @@ const pathFromPage = (page: string) => routes.find(route => route.label === page
 const localDateValue=()=>{const date=new Date(),pad=(n:number)=>String(n).padStart(2,'0');return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`}
 
 export default function App() {
-  const { consoles, sessions, payments, tariffs, expenses, now, loaded, loadError, theme, setTheme, refresh, loadApplication, toggleTheme, auditStatus, setAuditStatus } = useGameData()
+  const { consoles, sessions, payments, tariffs, expenses, snackProducts, snackSales, now, loaded, loadError, theme, setTheme, refresh, loadApplication, toggleTheme, auditStatus, setAuditStatus } = useGameData()
   const [modal, setModal] = useState<Modal>(null), [page, setPage] = useState(() => pageFromPath(window.location.pathname))
   const [appDialog, setAppDialog] = useState<AppDialog|null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -90,7 +93,7 @@ export default function App() {
   useEffect(() => {
     for (const session of sessions) {
       if (session.status !== 'active' || session.mode !== 'prepaid' || session.durationMinutes === undefined) continue
-      const expirationAt = session.startedAt + session.durationMinutes * 60_000
+      const expirationAt = (session.transferStartedAt ?? session.startedAt) + session.durationMinutes * 60_000
       if (now < expirationAt || alertedExpiryBySession.current.get(session.id) === expirationAt) continue
       const context = audioContextRef.current
       if (!context) continue
@@ -138,6 +141,12 @@ export default function App() {
   }
   const extendCustom = async (s: GameSession, c: GameConsole) => {
     setExtensionRequest({ session: s, consoleInfo: c, initialMinutes: 15 })
+  }
+  const setTimeLimit = async (session: GameSession, minutes: number) => {
+    const consoleInfo = consoles.find(item => item.id === session.consoleId)
+    if (!consoleInfo) return
+    try { await setSessionTimeLimit(session, minutes, tariffPrice(consoleInfo, minutes, tariffs), method); await refresh() }
+    catch (error) { await showMessageDialog('No se pudo poner el límite', error instanceof SessionConflictError ? error.message : 'Ocurrió un error al actualizar la sesión. Inténtalo de nuevo.') }
   }
   const saveExtension = async (minutes: number, additionalCharge: number) => {
     if (!extensionRequest) return
@@ -222,6 +231,14 @@ export default function App() {
     if(!Number.isFinite(amount)||amount<=0){await showMessageDialog('Importe no válido','El importe debe ser mayor que cero.');return}
     const record:Expense={...input,id:crypto.randomUUID(),concept,...(input.notes?.trim()?{notes:input.notes.trim()}: {})}
     await db.transaction('rw', db.expenses, db.userActions, async () => { await db.expenses.add(record); await recordUserAction({ action: 'expense.created', entity: 'expense', entityId: record.id, summary: `Registró el gasto ${record.concept}.`, details: JSON.stringify({ amount, category: record.category, date: record.date, type: record.type }) }) });setAddingExpense(false);await refresh()
+  }
+  const addSnackProduct = async (input: { id?: string; name: string; price: number; stock: number; active: boolean }) => {
+    try { await saveSnackProduct(input); await refresh(); return true }
+    catch (error) { await showMessageDialog('No se pudo guardar el producto', error instanceof SnackOperationError ? error.message : 'Ocurrió un error al guardar el producto. Inténtalo de nuevo.'); return false }
+  }
+  const registerSnackSale = async (items: Array<{ productId: string; quantity: number }>, paymentMethod: PaymentMethod) => {
+    try { await createSnackSale({ items, method: paymentMethod }); await refresh(); return true }
+    catch (error) { await showMessageDialog('No se pudo registrar la venta', error instanceof SnackOperationError ? error.message : 'Ocurrió un error al registrar la venta. Inténtalo de nuevo.'); return false }
   }
   const markPaymentPaid = async (payment:Payment) => {
     try { await markStoredPaymentPaid(payment.id); await refresh() }
@@ -316,18 +333,19 @@ export default function App() {
     </aside>
     <main className="main-area"><header className="topbar"><div className="breadcrumb">CompuBac <span>/</span> {page}</div><div className="top-actions"><button className="icon-btn theme-toggle" onClick={toggleTheme} aria-label={theme === 'light' ? 'Activar tema oscuro' : 'Activar tema claro'} title={theme === 'light' ? 'Activar tema oscuro' : 'Activar tema claro'}>{theme === 'light' ? <Moon size={18}/> : <Sun size={18}/>}</button><div className="top-avatar">M</div></div></header>
       <div className="content">
-        <div className="page-heading"><div><div className="eyebrow">{new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).format(now).toUpperCase()}</div><h1>{page === 'Consolas' ? 'Control de consolas' : page === 'Calculadora' ? 'Calculadora de rentabilidad' : page}</h1><p>{page === 'Consolas' ? 'Todo listo para tu siguiente partida.' : 'Resumen y administración de tu negocio.'}</p></div>{page === 'Consolas' && <button className="button secondary" onClick={() => navigate('Configuración')}><Settings2 size={16}/> Gestionar consolas</button>}</div>
+        <div className="page-heading"><div><div className="eyebrow">{new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).format(now).toUpperCase()}</div><h1>{page === 'Consolas' ? 'Control de consolas' : page === 'Calculadora' ? 'Calculadora de rentabilidad' : page === 'Snacks' ? 'Venta de comida y snacks' : page}</h1><p>{page === 'Consolas' ? 'Todo listo para tu siguiente partida.' : page === 'Snacks' ? 'Registra ventas y lleva el control de existencias.' : 'Resumen y administración de tu negocio.'}</p></div>{page === 'Consolas' && <button className="button secondary" onClick={() => navigate('Configuración')}><Settings2 size={16}/> Gestionar consolas</button>}</div>
         {page === 'Consolas' && <DashboardPage
-          consoles={consoles} payments={payments} activeSessions={activeSessions} activeByConsole={activeByConsole}
+          consoles={consoles} payments={payments} activeSessions={activeSessions} activeByConsole={activeByConsole} tariffs={tariffs}
           todayStart={todayStart} todayIncome={todayIncome} todayPayments={todayPayments} completedToday={completedToday}
           todayHours={todayHours} recent={recent} now={now} onNavigate={navigate}
           onStart={consoleInfo => setModal({ kind: 'start', console: consoleInfo })}
           onFinish={(session, consoleInfo) => setModal({ kind: 'finish', session, console: consoleInfo })}
           onExtend={extend} onCustomExtend={extendCustom} onCancel={cancelSession} onReorder={reorderConsoles}
-          onTransfer={session => setSessionToTransfer(session)}
+          onTransfer={session => setSessionToTransfer(session)} onSetLimit={(session, minutes) => void setTimeLimit(session, minutes)}
         />}
         {page === 'Sesiones' && <SessionsPage sessions={sessions} consoles={consoles} onFinish={(session, consoleInfo) => setModal({ kind: 'finish', session, console: consoleInfo })} onEdit={openSessionEditor} onDelete={deleteSession} />}
         {page === 'Finanzas' && <FinancePage payments={payments} sessions={sessions} expenses={expenses} onMarkPaid={markPaymentPaid} onAddExpense={() => setAddingExpense(true)} />}
+        {page === 'Snacks' && <SnackSalesPage products={snackProducts} sales={snackSales} now={now} onSaveProduct={addSnackProduct} onRegisterSale={registerSnackSale} />}
         {page === 'Configuración' && <SettingsPage consoles={consoles} tariffs={tariffs}
           onAddConsole={openAddConsole} onEditConsole={consoleInfo => setConsoleDialog({ mode: 'edit', consoleInfo })}
           onRemoveConsole={removeConsole} onRestoreConsole={restoreConsole} onDeleteConsole={deleteConsole} onExportCsv={exportActionsCsv} onExportBackup={exportBackup} onImportBackup={importBackup}

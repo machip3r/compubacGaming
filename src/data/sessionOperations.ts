@@ -36,9 +36,9 @@ export async function startSession(input: {
     await db.sessions.add(session)
     await db.consoles.update(consoleInfo.id, { status: 'occupied' })
     if (paid && amount > 0) {
-      await db.payments.add({ id: crypto.randomUUID(), sessionId: session.id, consoleId: consoleInfo.id, createdAt: startedAt, paidAt: startedAt, concept: `Prepago · ${durationMinutes} min`, amount, method, status: 'paid' })
+      await db.payments.add({ id: crypto.randomUUID(), sessionId: session.id, consoleId: consoleInfo.id, createdAt: startedAt, paidAt: startedAt, concept: `Prepago · ${durationMinutes ?? 0} min`, amount, method, status: 'paid' })
     }
-    await recordUserAction({ action: 'session.started', entity: 'session', entityId: session.id, summary: `Inició sesión en ${currentConsole.name}.`, details: JSON.stringify({ mode, durationMinutes: mode === 'prepaid' ? durationMinutes : null, amount, paid, method }) })
+    await recordUserAction({ action: 'session.started', entity: 'session', entityId: session.id, summary: `Inició sesión en ${currentConsole.name}.`, details: JSON.stringify({ mode, durationMinutes, amount, paid, method }) })
   })
   return session
 }
@@ -50,18 +50,26 @@ export async function finishSession(input: {
 }) {
   const endedAt = Date.now()
   let total = 0
-  await db.transaction('rw', db.sessions, db.consoles, db.payments, db.userActions, async () => {
+  await db.transaction('rw', db.sessions, db.consoles, db.payments, db.sessionExtensions, db.userActions, async () => {
     const current = await db.sessions.get(input.session.id)
     if (!current || current.status !== 'active') {
       throw new SessionConflictError('La sesión ya cambió de estado. Actualiza la pantalla antes de continuar.')
     }
     const currentConsole = await db.consoles.get(current.consoleId)
     if (!currentConsole) throw new SessionConflictError('No se encontró la consola asociada a esta sesión.')
-    total = current.mode === 'prepaid' ? current.amount : openSessionAmount(current.rate, current.startedAt, endedAt)
+    const extensionCharges = (await db.sessionExtensions.where('sessionId').equals(current.id).toArray()).reduce((sum, extension) => sum + extension.amount, 0)
+    total = current.mode === 'prepaid' ? current.amount : openSessionAmount(current.rate, current.startedAt, endedAt) + extensionCharges
     const due = Math.max(0, total - current.paidAmount)
     await db.sessions.update(current.id, { endedAt, amount: total, status: 'completed' })
     await db.consoles.update(currentConsole.id, { status: 'available' })
-    if (due > 0) {
+    const pendingPayments = await db.payments.where({ sessionId: current.id, status: 'pending' }).toArray()
+    const [existingPending, ...duplicatePending] = pendingPayments
+    for (const payment of duplicatePending) await db.payments.update(payment.id, { status: 'void' })
+    if (existingPending && due > 0) {
+      await db.payments.update(existingPending.id, { amount: due, method: input.method, concept: `Cobro de sesión · ${currentConsole.name}`, ...(input.paid ? { paidAt: endedAt, status: 'paid' } : {}) })
+    } else if (existingPending) {
+      await db.payments.update(existingPending.id, { status: 'void' })
+    } else if (due > 0) {
       await db.payments.add({ id: crypto.randomUUID(), sessionId: current.id, consoleId: currentConsole.id, createdAt: endedAt, ...(input.paid ? { paidAt: endedAt } : {}), concept: `Cobro de sesión · ${currentConsole.name}`, amount: due, method: input.method, status: input.paid ? 'paid' : 'pending' })
     }
     await recordUserAction({ action: 'session.completed', entity: 'session', entityId: current.id, summary: `Finalizó sesión en ${currentConsole.name}.`, details: JSON.stringify({ amount: total, paidAmount: current.paidAmount, due, paid: input.paid, method: input.method }) })
@@ -86,12 +94,34 @@ export async function extendSession(session: GameSession, amount: number, method
     const current = await db.sessions.get(session.id)
     if (!current || current.status !== 'active') throw new SessionConflictError('La sesión ya no está activa. Actualiza la pantalla antes de extenderla.')
     const timerStartedAt = current.transferStartedAt ?? current.startedAt
-    const expiredPrepaid = current.mode === 'prepaid' && current.durationMinutes !== undefined && createdAt >= timerStartedAt + current.durationMinutes * 60_000
-    const durationMinutes = expiredPrepaid ? (createdAt - timerStartedAt) / 60_000 + minutes : (current.durationMinutes ?? 0) + minutes
+    const expiredLimited = current.durationMinutes !== undefined && createdAt >= timerStartedAt + current.durationMinutes * 60_000
+    const durationMinutes = expiredLimited ? (createdAt - timerStartedAt) / 60_000 + minutes : (current.durationMinutes ?? 0) + minutes
     await db.sessions.update(current.id, { durationMinutes, initialDurationMinutes: (current.initialDurationMinutes ?? current.durationMinutes ?? 0) + minutes, amount: current.amount + amount, paidAmount: current.paidAmount + amount })
     await db.sessionExtensions.add({ id: crypto.randomUUID(), sessionId: current.id, minutes, amount, createdAt })
     if (amount > 0) await db.payments.add({ id: crypto.randomUUID(), sessionId: current.id, consoleId: current.consoleId, createdAt, paidAt: createdAt, concept: `Extensión · ${minutes} min`, amount, method, status: 'paid' })
     await recordUserAction({ action: 'session.extended', entity: 'session', entityId: current.id, summary: `Agregó ${minutes} minutos${amount > 0 ? ` con un cobro de ${formatMoney(amount)}` : ' sin costo'}.`, details: JSON.stringify({ minutes, amount, charged: amount > 0, method }) })
+  })
+}
+
+export async function setSessionTimeLimit(session: GameSession, minutes: number, amount: number, method: PaymentMethod) {
+  const createdAt = Date.now()
+  await db.transaction('rw', db.sessions, db.sessionExtensions, db.payments, db.userActions, async () => {
+    const current = await db.sessions.get(session.id)
+    if (!current || current.status !== 'active' || current.mode !== 'open') {
+      throw new SessionConflictError('La sesión ya cambió. Actualiza la pantalla e inténtalo de nuevo.')
+    }
+    const existingExtensions = await db.sessionExtensions.where('sessionId').equals(current.id).toArray()
+    const extensionCharges = existingExtensions.reduce((sum, extension) => sum + extension.amount, 0)
+    const total = amount + extensionCharges
+    const pendingAmount = Math.max(0, total - current.paidAmount)
+    await db.sessions.update(current.id, { mode: 'prepaid', durationMinutes: minutes, initialDurationMinutes: minutes, transferStartedAt: createdAt, amount: total })
+    const pendingPayments = await db.payments.where({ sessionId: current.id, status: 'pending' }).toArray()
+    const [existingPending, ...duplicatePending] = pendingPayments
+    for (const payment of duplicatePending) await db.payments.update(payment.id, { status: 'void' })
+    if (existingPending && pendingAmount > 0) await db.payments.update(existingPending.id, { amount: pendingAmount, method, concept: `Prepago · ${minutes} min` })
+    else if (existingPending) await db.payments.update(existingPending.id, { status: 'void' })
+    else if (pendingAmount > 0) await db.payments.add({ id: crypto.randomUUID(), sessionId: current.id, consoleId: current.consoleId, createdAt, concept: `Prepago · ${minutes} min`, amount: pendingAmount, method, status: 'pending' })
+    await recordUserAction({ action: 'session.limited', entity: 'session', entityId: current.id, summary: `Configuró ${minutes} minutos con pago pendiente.`, details: JSON.stringify({ minutes, amount: total, pendingAmount }) })
   })
 }
 
@@ -100,7 +130,7 @@ export async function transferSessionToConsole(sessionId: string, destinationCon
   await db.transaction('rw', db.sessions, db.consoles, db.userActions, async () => {
     const session = await db.sessions.get(sessionId)
     if (!session || session.status !== 'active' || session.mode !== 'prepaid' || session.durationMinutes === undefined) {
-      throw new SessionConflictError('Solo se pueden transferir sesiones prepagadas que sigan activas.')
+      throw new SessionConflictError('Solo se pueden transferir sesiones con límite de tiempo que sigan activas.')
     }
     const sourceConsole = await db.consoles.get(session.consoleId)
     const destination = await db.consoles.get(destinationConsoleId)

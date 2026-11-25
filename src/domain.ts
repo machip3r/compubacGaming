@@ -6,6 +6,9 @@ export interface GameSession { id: string; consoleId: string; startedAt: number;
 export interface SessionExtension { id: string; sessionId: string; minutes: number; amount: number; createdAt: number; additionalCharge?: number }
 export interface Payment { id: string; sessionId: string; consoleId: string; createdAt: number; paidAt?: number; concept: string; amount: number; method: PaymentMethod; status: 'paid' | 'pending' | 'void' }
 export interface Expense { id: string; concept: string; category: 'Renta'|'Electricidad'|'Internet'|'Mantenimiento'|'Controles y accesorios'|'Videojuegos'|'Suscripciones'|'Limpieza'|'Otros'; amount: number; date: string; type: 'fixed'|'variable'; notes?: string }
+export interface SnackProduct { id: string; name: string; price: number; stock: number; active: boolean; createdAt: number }
+export interface SnackSaleItem { productId: string; name: string; quantity: number; unitPrice: number }
+export interface SnackSale { id: string; soldAt: number; items: SnackSaleItem[]; total: number; method: PaymentMethod }
 export interface TariffPlan { id: string; label: string; minutes: number; ps2Price: number; xboxPrice: number }
 export interface Setting { key: string; value: string | number | boolean }
 export interface UserAction { id: string; timestamp: number; action: string; entity: string; entityId?: string; summary: string; details?: string }

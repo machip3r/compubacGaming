@@ -23,7 +23,7 @@ export function SessionDialog(props: SessionDialogProps) {
   const [mode, setMode] = useState<GameSession['mode']>('prepaid')
   const [paid, setPaid] = useState(true)
   const prepaidPrice = tariffPrice(modal.console, duration, tariffs)
-  const total = modal.kind === 'finish' ? (modal.session.mode === 'prepaid' ? modal.session.amount : openSessionAmount(modal.session.rate, modal.session.startedAt, now)) : 0
+  const total = modal.kind === 'finish' ? (modal.session.mode === 'prepaid' ? modal.session.amount : openSessionAmount(modal.session.rate, modal.session.startedAt, now) + modal.session.amount) : 0
 
   return <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
     <section className="modal" role="dialog" aria-modal="true" aria-labelledby="session-dialog-title">
@@ -42,7 +42,7 @@ export function SessionDialog(props: SessionDialogProps) {
           <div className="helper-note"><Clock3 size={15}/> Aviso visual 5 minutos antes; la sesión no termina sola.</div>
           <div className="field-label">Cobro inicial</div><PaymentChoices paid={paid} method={method} onPaidChange={setPaid} onMethodChange={onMethodChange}/>
           <button className="button modal-submit" onClick={() => onBegin({ duration, mode, paid })}><Gamepad2 size={17}/> Iniciar sesión <span>·</span> {formatMoney(prepaidPrice)}</button>
-        </> : <><div className="helper-note open-note"><Activity size={16}/> El cobro se calcula al finalizar, por minuto iniciado. No se registra ningún pago por adelantado.</div><div className="helper-note open-note"><Clock3 size={15}/> Aviso visual 5 minutos antes; la sesión no termina sola.</div><div className="open-rate"><span>Tarifa por hora</span><b>{formatMoney(modal.console.hourlyRate)}</b></div><button className="button modal-submit" onClick={() => onBegin({ duration, mode, paid })}><Gamepad2 size={17}/> Iniciar sesión</button></>}
+        </> : <><div className="helper-note open-note"><Activity size={16}/> El cobro se calcula al finalizar, por minuto iniciado. No se registra ningún pago por adelantado.</div><div className="open-rate"><span>Tarifa por hora</span><b>{formatMoney(modal.console.hourlyRate)}</b></div><button className="button modal-submit" onClick={() => onBegin({ duration, mode, paid: false })}><Gamepad2 size={17}/> Iniciar sesión</button></>}
       </> : <>
         <div className="finish-summary"><div><span>Duración jugada</span><b>{formatTime(elapsed(modal.session.startedAt, now))}</b></div><div><span>Importe total</span><b>{formatMoney(total)}</b></div><div><span>Ya pagado</span><b>{formatMoney(modal.session.paidAmount)}</b></div><div className="due"><span>Saldo por cobrar</span><b>{formatMoney(Math.max(0, total - modal.session.paidAmount))}</b></div></div>
         <div className="field-label">Pago restante</div><PaymentChoices paid={paid} method={method} onPaidChange={setPaid} onMethodChange={onMethodChange}/>

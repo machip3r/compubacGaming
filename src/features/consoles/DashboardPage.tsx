@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Activity, ArrowRightLeft, CalendarClock, Check, Clock3, Gamepad2, Plus, TrendingUp, Wallet, X } from 'lucide-react';
-import { elapsed, formatMoney, formatTime, openSessionAmount, type GameConsole, type GameSession, type Payment } from '../../domain';
+import { elapsed, formatMoney, formatTime, openSessionAmount, type GameConsole, type GameSession, type Payment, type TariffPlan } from '../../domain';
 import { Stat } from '../../shared/Stat';
+import { SetSessionLimitDialog } from '../sessions/SetSessionLimitDialog';
 
 interface DashboardPageProps {
   consoles: GameConsole[];
@@ -15,6 +16,7 @@ interface DashboardPageProps {
   todayHours: number;
   recent: GameSession[];
   now: number;
+  tariffs: TariffPlan[];
   onStart: (consoleInfo: GameConsole) => void;
   onFinish: (session: GameSession, consoleInfo: GameConsole) => void;
   onExtend: (session: GameSession, consoleInfo: GameConsole) => void;
@@ -22,14 +24,16 @@ interface DashboardPageProps {
   onCancel: (session: GameSession, consoleInfo: GameConsole) => void;
   onReorder: (fromId: string, toId: string) => void;
   onTransfer: (session: GameSession) => void;
+  onSetLimit: (session: GameSession, duration: number) => void;
   onNavigate: (page: string) => void;
 }
 
 export function DashboardPage(props: DashboardPageProps) {
-  const { consoles, payments, activeSessions, activeByConsole, todayStart, todayIncome, todayPayments, completedToday, todayHours, recent, now, onStart, onFinish, onExtend, onCustomExtend, onCancel, onReorder, onTransfer, onNavigate } = props;
+  const { consoles, payments, activeSessions, activeByConsole, todayStart, todayIncome, todayPayments, completedToday, todayHours, recent, now, tariffs, onStart, onFinish, onExtend, onCustomExtend, onCancel, onReorder, onTransfer, onSetLimit, onNavigate } = props;
   const [draggingId, setDraggingId] = useState('');
   const [dropTargetId, setDropTargetId] = useState('');
   const [orderAnnouncement, setOrderAnnouncement] = useState('');
+  const [limitTarget, setLimitTarget] = useState<{ session: GameSession; consoleInfo: GameConsole } | null>(null);
   const orderedConsoles = consoles.filter(consoleInfo => consoleInfo.active).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   const moveByKeyboard = (id: string, delta: number) => {
     const index = orderedConsoles.findIndex(consoleInfo => consoleInfo.id === id);
@@ -72,9 +76,9 @@ export function DashboardPage(props: DashboardPageProps) {
           </div>
           <div className="console-title"><h3>{consoleInfo.name}</h3><span>{consoleInfo.type} <b>·</b> {formatMoney(consoleInfo.hourlyRate)}/hora</span></div>
           {session ? <>
-            <div className="timer-box"><div><span className="timer-label">{session.mode === 'prepaid' ? 'TIEMPO RESTANTE' : 'TIEMPO TRANSCURRIDO'}</span><strong className={expired ? 'timer-red' : ''}>{formatTime(session.mode === 'prepaid' ? remaining! : seconds)}</strong></div><div className="timer-side"><span>INICIO</span><b>{new Date(session.startedAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })}</b></div></div>
-            <div className="card-summary"><div><span>Importe</span><b>{formatMoney(charge)}</b></div><div><span>{session.mode === 'prepaid' ? 'Termina' : 'Modalidad'}</span><b>{session.mode === 'prepaid' ? new Date(timerStartedAt + (session.durationMinutes ?? 0) * 60000).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }) : 'Tiempo libre'}</b></div></div>
-            <div className="card-actions"><button className="button custom-extend-button" title="Agregar tiempo personalizado" aria-label={`Agregar tiempo personalizado a ${consoleInfo.name}`} onClick={() => onCustomExtend(session, consoleInfo)}><Plus size={18} /></button><button className="button outline" onClick={() => onExtend(session, consoleInfo)}><Plus size={15} /> 30 min</button><button className="button finish" onClick={() => onFinish(session, consoleInfo)}><Check size={15} /> Finalizar</button></div>
+            <div className="timer-box"><div><span className="timer-label">{remaining !== null ? 'TIEMPO RESTANTE' : 'TIEMPO TRANSCURRIDO'}</span><strong className={expired ? 'timer-red' : ''}>{formatTime(remaining !== null ? remaining : seconds)}</strong></div><div className="timer-side"><span>INICIO</span><b>{new Date(session.startedAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })}</b></div></div>
+            <div className="card-summary"><div><span>Importe</span><b>{formatMoney(charge)}</b></div><div><span>{remaining !== null ? 'Termina' : 'Modalidad'}</span><b>{remaining !== null ? new Date(timerStartedAt + (session.durationMinutes ?? 0) * 60000).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }) : 'Tiempo libre'}</b></div></div>
+            <div className="card-actions">{session.mode === 'open' && <button className="button outline" onClick={() => setLimitTarget({ session, consoleInfo })}><Clock3 size={15} /> Poner límite</button>}<button className="button custom-extend-button" title="Agregar tiempo personalizado" aria-label={`Agregar tiempo personalizado a ${consoleInfo.name}`} onClick={() => onCustomExtend(session, consoleInfo)}><Plus size={18} /></button><button className="button outline" onClick={() => onExtend(session, consoleInfo)}><Plus size={15} /> 30 min</button><button className="button finish" onClick={() => onFinish(session, consoleInfo)}><Check size={15} /> Finalizar</button></div>
           </> : <>
             <div className="available-body"><div className="available-orb"><Activity size={22} /></div><p>Lista para recibir<br />una nueva sesión</p></div>
             <button disabled={consoleInfo.status === 'service'} className="button start-button" onClick={() => onStart(consoleInfo)}><Plus size={16} /> Iniciar sesión</button>
@@ -88,5 +92,6 @@ export function DashboardPage(props: DashboardPageProps) {
       </div>
       <div className="panel quick-panel"><div className="panel-heading"><div><h2>Resumen del día</h2><p>Hoy, {new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })}</p></div><div className="summary-icon"><Wallet size={18} /></div></div><div className="summary-line"><span>Ingresos cobrados</span><b>{formatMoney(todayIncome)}</b></div><div className="summary-line"><span>Pagos pendientes</span><b>{formatMoney(payments.filter(payment => payment.status === 'pending' && payment.createdAt >= todayStart.getTime()).reduce((sum, payment) => sum + payment.amount, 0))}</b></div><div className="summary-line"><span>Tiempo de juego</span><b>{`${Math.floor(todayHours)}h ${Math.floor(todayHours % 1 * 60)}m`}</b></div><div className="summary-footer"><button className="text-button" onClick={() => onNavigate('Finanzas')}>Ver finanzas →</button></div></div>
     </section>
+    {limitTarget && <SetSessionLimitDialog consoleInfo={limitTarget.consoleInfo} tariffs={tariffs} onClose={() => setLimitTarget(null)} onSave={duration => { onSetLimit(limitTarget.session, duration); setLimitTarget(null) }} />}
   </>;
 }

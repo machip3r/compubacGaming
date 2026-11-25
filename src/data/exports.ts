@@ -2,9 +2,9 @@ import { db } from '../db'
 import { downloadFile } from '../shared/downloadFile'
 
 export async function exportCsv() {
-  const [consoles, sessions, payments, extensions, expenses, tariffs, settings, actions] = await Promise.all([
+  const [consoles, sessions, payments, extensions, expenses, tariffs, settings, actions, snackProducts, snackSales] = await Promise.all([
     db.consoles.toArray(), db.sessions.toArray(), db.payments.toArray(), db.sessionExtensions.toArray(),
-    db.expenses.toArray(), db.tariffPlans.toArray(), db.settings.toArray(), db.userActions.toArray(),
+    db.expenses.toArray(), db.tariffPlans.toArray(), db.settings.toArray(), db.userActions.toArray(), db.snackProducts.toArray(), db.snackSales.toArray(),
   ])
   const consolesById = new Map(consoles.map(consoleInfo => [consoleInfo.id, consoleInfo.name]))
   const header = ['tipo','id','fecha','consola','sesion','concepto','duracion_minutos','importe_mxn','cobrado_mxn','tarifa_hora_mxn','metodo_pago','estado','notas','detalles']
@@ -17,6 +17,8 @@ export async function exportCsv() {
     ...tariffs.map(tariff => ['tarifa',tariff.id,'','','',tariff.label,tariff.minutes,tariff.ps2Price,'','','','activa','',JSON.stringify({ xboxPrice: tariff.xboxPrice })]),
     ...settings.map(setting => ['configuración',setting.key,'','','',setting.key,'','','','','','guardada','',String(setting.value)]),
     ...actions.map(action => ['acción',action.id,new Date(action.timestamp).toISOString(),action.entity==='console'&&action.entityId?consolesById.get(action.entityId)??action.entityId:'',action.entity==='session'?action.entityId??'':'',action.summary,'','','','','',action.action,action.entity,JSON.stringify({ entityId: action.entityId, details: action.details })]),
+    ...snackProducts.map(product => ['producto snack',product.id,new Date(product.createdAt).toISOString(),'','','Inventario · '+product.name,'',product.price,'','','',product.active?'activo':'inactivo',String(product.stock),'']),
+    ...snackSales.map(sale => ['venta snack',sale.id,new Date(sale.soldAt).toISOString(),'','',sale.items.map(item=>`${item.quantity} × ${item.name}`).join(' · '),sale.items.reduce((sum,item)=>sum+item.quantity,0),sale.total,sale.total,'',sale.method,'pagada','',JSON.stringify({ items: sale.items })]),
   ]
   const csv = [header, ...rows].map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n')
   downloadFile(`compubac-registros-${localDateValue()}.csv`, 'text/csv;charset=utf-8', `\uFEFF${csv}`)

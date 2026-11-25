@@ -1,10 +1,11 @@
 import Dexie, { type Table } from 'dexie'
-import { initialConsoles, initialTariffs, type Expense, type FileHandleRecord, type GameConsole, type GameSession, type Payment, type SessionExtension, type Setting, type TariffPlan, type UserAction } from './domain'
+import { initialConsoles, initialTariffs, type Expense, type FileHandleRecord, type GameConsole, type GameSession, type Payment, type SessionExtension, type Setting, type SnackProduct, type SnackSale, type TariffPlan, type UserAction } from './domain'
 
 class GameHubDB extends Dexie {
   consoles!: Table<GameConsole, string>; sessions!: Table<GameSession, string>; sessionExtensions!: Table<SessionExtension, string>
   tariffPlans!: Table<TariffPlan, string>; payments!: Table<Payment, string>; expenses!: Table<Expense, string>; settings!: Table<Setting, string>
   userActions!: Table<UserAction, string>; fileHandles!: Table<FileHandleRecord, string>
+  snackProducts!: Table<SnackProduct, string>; snackSales!: Table<SnackSale, string>
   constructor() {
     super('gamehub-local')
     this.version(1).stores({ consoles: 'id, type, status, active', sessions: 'id, consoleId, startedAt, status', sessionExtensions: 'id, sessionId, createdAt', tariffPlans: 'id, minutes', payments: 'id, sessionId, consoleId, createdAt, status', expenses: 'id, category, date', settings: 'key' })
@@ -14,6 +15,7 @@ class GameHubDB extends Dexie {
       const rows = await table.toArray() as GameConsole[]
       await Promise.all(rows.map((consoleInfo, sortOrder) => table.update(consoleInfo.id, { sortOrder })))
     })
+    this.version(4).stores({ consoles: 'id, type, status, active', sessions: 'id, consoleId, startedAt, status', sessionExtensions: 'id, sessionId, createdAt', tariffPlans: 'id, minutes', payments: 'id, sessionId, consoleId, createdAt, status', expenses: 'id, category, date', settings: 'key', userActions: 'id, timestamp, action, entity, entityId', fileHandles: 'id', snackProducts: 'id, name, active', snackSales: 'id, soldAt' })
   }
 }
 export const db = new GameHubDB()

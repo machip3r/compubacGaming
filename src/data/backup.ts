@@ -1,4 +1,4 @@
-import type { Expense, GameConsole, GameSession, Payment, SessionExtension, Setting, TariffPlan, UserAction } from '../domain'
+import type { Expense, GameConsole, GameSession, Payment, SessionExtension, Setting, SnackProduct, SnackSale, TariffPlan, UserAction } from '../domain'
 import { db } from '../db'
 
 export interface BackupData {
@@ -10,6 +10,8 @@ export interface BackupData {
   expenses: Expense[]
   settings: Setting[]
   userActions?: UserAction[]
+  snackProducts?: SnackProduct[]
+  snackSales?: SnackSale[]
 }
 
 export interface AppBackup {
@@ -41,12 +43,14 @@ export function parseBackup(value: unknown): AppBackup {
   const expenses = rows(data, 'expenses') as unknown as Expense[]
   const settings = rows(data, 'settings') as unknown as Setting[]
   const userActions = data.userActions === undefined ? undefined : rows(data, 'userActions') as unknown as UserAction[]
+  const snackProducts = data.snackProducts === undefined ? undefined : rows(data, 'snackProducts') as unknown as SnackProduct[]
+  const snackSales = data.snackSales === undefined ? undefined : rows(data, 'snackSales') as unknown as SnackSale[]
 
   const uniqueIds = (items: Array<{ id: string }>, label: string) => {
     const ids = items.map(item => item.id)
     if (ids.some(id => typeof id !== 'string' || !id) || new Set(ids).size !== ids.length) throw new Error(`La sección «${label}» contiene identificadores vacíos o repetidos.`)
   }
-  for (const [name, items] of Object.entries({ consoles, sessions, extensions, tariffs, payments, expenses, ...(userActions ? { userActions } : {}) })) uniqueIds(items as Array<{ id: string }>, name)
+  for (const [name, items] of Object.entries({ consoles, sessions, extensions, tariffs, payments, expenses, ...(userActions ? { userActions } : {}), ...(snackProducts ? { snackProducts } : {}), ...(snackSales ? { snackSales } : {}) })) uniqueIds(items as Array<{ id: string }>, name)
   if (settings.some(setting => !hasString(setting as unknown as Record<string, unknown>, 'key') || !setting.key || !['string', 'number', 'boolean'].includes(typeof setting.value) || (typeof setting.value === 'number' && !Number.isFinite(setting.value))) || new Set(settings.map(setting => setting.key)).size !== settings.length) throw new Error('La sección «settings» contiene claves o valores no válidos.')
 
   if (consoles.some(item => !hasString(item as unknown as Record<string, unknown>, 'name') || !item.name.trim() || !hasString(item as unknown as Record<string, unknown>, 'type') || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'hourlyRate') || item.hourlyRate < 0 || (item.sortOrder !== undefined && (!hasFiniteNumber(item as unknown as Record<string, unknown>, 'sortOrder') || item.sortOrder < 0)) || typeof item.active !== 'boolean' || !['available', 'occupied', 'service'].includes(item.status))) throw new Error('Hay una consola con nombre, tipo, tarifa u orden no válido.')
@@ -57,9 +61,11 @@ export function parseBackup(value: unknown): AppBackup {
   if (extensions.some(item => !sessionIds.has(item.sessionId) || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'minutes') || item.minutes <= 0 || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'amount') || item.amount < 0 || (item.additionalCharge !== undefined && (!hasFiniteNumber(item as unknown as Record<string, unknown>, 'additionalCharge') || item.additionalCharge < 0)) || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'createdAt'))) throw new Error('Hay una extensión no válida o sin sesión asociada.')
   if (tariffs.some(item => !hasString(item as unknown as Record<string, unknown>, 'label') || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'minutes') || item.minutes <= 0 || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'ps2Price') || item.ps2Price < 0 || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'xboxPrice') || item.xboxPrice < 0)) throw new Error('Hay un paquete de tarifa con datos no válidos.')
   if (expenses.some(item => !hasString(item as unknown as Record<string, unknown>, 'concept') || !item.concept.trim() || !hasString(item as unknown as Record<string, unknown>, 'date') || !/^\d{4}-\d{2}-\d{2}$/.test(item.date) || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'amount') || item.amount <= 0 || !['fixed', 'variable'].includes(item.type))) throw new Error('Hay un gasto con concepto, fecha o importe no válido.')
+  if (snackProducts?.some(item => !hasString(item as unknown as Record<string, unknown>, 'name') || !item.name.trim() || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'price') || item.price <= 0 || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'stock') || item.stock < 0 || !Number.isInteger(item.stock) || typeof item.active !== 'boolean' || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'createdAt'))) throw new Error('Hay un producto de snacks con datos no válidos.')
+  if (snackSales?.some(item => !hasFiniteNumber(item as unknown as Record<string, unknown>, 'soldAt') || !hasFiniteNumber(item as unknown as Record<string, unknown>, 'total') || item.total < 0 || !['cash', 'transfer'].includes(item.method) || !Array.isArray(item.items) || item.items.some(line => !hasString(line as unknown as Record<string, unknown>, 'productId') || !hasString(line as unknown as Record<string, unknown>, 'name') || !hasFiniteNumber(line as unknown as Record<string, unknown>, 'quantity') || line.quantity <= 0 || !Number.isInteger(line.quantity) || !hasFiniteNumber(line as unknown as Record<string, unknown>, 'unitPrice') || line.unitPrice < 0))) throw new Error('Hay una venta de snacks con datos no válidos.')
 
   if (userActions?.some(action => !hasString(action as unknown as Record<string, unknown>, 'action') || !hasString(action as unknown as Record<string, unknown>, 'entity') || !hasString(action as unknown as Record<string, unknown>, 'summary') || !hasFiniteNumber(action as unknown as Record<string, unknown>, 'timestamp'))) throw new Error('La sección «userActions» contiene acciones no válidas.')
-  return { app: 'compubac-gaming', schemaVersion: 1, ...(typeof value.exportedAt === 'string' ? { exportedAt: value.exportedAt } : {}), data: { consoles, sessions, sessionExtensions: extensions, tariffPlans: tariffs, payments, expenses, settings, ...(userActions ? { userActions } : {}) } }
+  return { app: 'compubac-gaming', schemaVersion: 1, ...(typeof value.exportedAt === 'string' ? { exportedAt: value.exportedAt } : {}), data: { consoles, sessions, sessionExtensions: extensions, tariffPlans: tariffs, payments, expenses, settings, ...(userActions ? { userActions } : {}), ...(snackProducts ? { snackProducts } : {}), ...(snackSales ? { snackSales } : {}) } }
 }
 
 export async function createBackup() {
@@ -72,6 +78,8 @@ export async function createBackup() {
     expenses: await db.expenses.toArray(),
     settings: await db.settings.toArray(),
     userActions: await db.userActions.toArray(),
+    snackProducts: await db.snackProducts.toArray(),
+    snackSales: await db.snackSales.toArray(),
   }
   return { app: 'compubac-gaming' as const, schemaVersion: 1 as const, exportedAt: new Date().toISOString(), data }
 }
@@ -86,5 +94,7 @@ export async function restoreBackup(backup: AppBackup) {
     await db.expenses.clear(); if (backup.data.expenses.length) await db.expenses.bulkAdd(backup.data.expenses)
     await db.settings.clear(); if (backup.data.settings.length) await db.settings.bulkAdd(backup.data.settings)
     if (backup.data.userActions) { await db.userActions.clear(); if (backup.data.userActions.length) await db.userActions.bulkAdd(backup.data.userActions) }
+    if (backup.data.snackProducts) { await db.snackProducts.clear(); if (backup.data.snackProducts.length) await db.snackProducts.bulkAdd(backup.data.snackProducts) }
+    if (backup.data.snackSales) { await db.snackSales.clear(); if (backup.data.snackSales.length) await db.snackSales.bulkAdd(backup.data.snackSales) }
   })
 }
